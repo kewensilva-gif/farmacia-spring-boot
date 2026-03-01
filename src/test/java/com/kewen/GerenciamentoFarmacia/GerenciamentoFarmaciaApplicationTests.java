@@ -1,10 +1,10 @@
-package com.example.gerencia_veiculos;
+package com.kewen.GerenciamentoFarmacia;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class DemoApplicationTests {
+class GerenciamentoFarmaciaApplicationTests {
 
 	@Test
 	void contextLoads() {
