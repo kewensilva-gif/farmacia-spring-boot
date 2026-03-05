@@ -3,6 +3,7 @@ package com.kewen.GerenciamentoFarmacia.services;
 import com.kewen.GerenciamentoFarmacia.entities.User;
 import com.kewen.GerenciamentoFarmacia.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
@@ -15,7 +16,11 @@ public class UserService {
     private UserRepository userRepository;
 
     public User save(User user) {
-        return userRepository.save(user);
+        try {
+            return userRepository.save(user);
+        } catch (DataIntegrityViolationException ex) {
+            throw new IllegalAccessError("Username ou email já existe");
+        }
     }
 
     public Optional<User> findById(UUID id) {
@@ -47,14 +52,57 @@ public class UserService {
     }
 
     public User update(UUID id, User userDetails) {
-        return userRepository.findById(id).map(user -> {
-            user.setUsername(userDetails.getUsername());
-            user.setEmail(userDetails.getEmail());
-            user.setPassword(userDetails.getPassword());
-            user.setEnabled(userDetails.getEnabled());
-            user.setRoles(userDetails.getRoles());
-            return userRepository.save(user);
-        }).orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        User existingUser = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        validateUsername(userDetails.getUsername(), existingUser);
+        validateEmail(userDetails.getEmail(), existingUser);
+
+        updateFields(existingUser, userDetails);
+
+        return userRepository.save(existingUser);
+    }
+
+    private void validateUsername(String newUsername, User existingUser) {
+        if (newUsername == null) return;
+
+        boolean usernameChanged = !newUsername.equals(existingUser.getUsername());
+
+        if (usernameChanged && userRepository.existsByUsername(newUsername)) {
+            throw new IllegalAccessError("Username já existe");
+        }
+    }
+
+    private void validateEmail(String newEmail, User existingUser) {
+        if (newEmail == null) return;
+
+        boolean emailChanged = !newEmail.equals(existingUser.getEmail());
+
+        if (emailChanged && userRepository.existsByEmail(newEmail)) {
+            throw new IllegalAccessError("Email já existe");
+        }
+    }
+
+    private void updateFields(User existingUser, User userDetails) {
+        if (userDetails.getUsername() != null) {
+            existingUser.setUsername(userDetails.getUsername());
+        }
+
+        if (userDetails.getEmail() != null) {
+            existingUser.setEmail(userDetails.getEmail());
+        }
+
+        if (userDetails.getPassword() != null) {
+            existingUser.setPassword(userDetails.getPassword());
+        }
+
+        if (userDetails.getEnabled() != null) {
+            existingUser.setEnabled(userDetails.getEnabled());
+        }
+
+        if (userDetails.getRoles() != null) {
+            existingUser.setRoles(userDetails.getRoles());
+        }
     }
 
     public void deleteById(UUID id) {
