@@ -15,6 +15,10 @@ public class RoleService {
     private RoleRepository roleRepository;
 
     public Role save(Role role) {
+        if (roleRepository.existsByName(role.getName())) {
+            throw new RuntimeException("Já existe uma Role com nome '" + role.getName() + "'");
+        }
+
         return roleRepository.save(role);
     }
 
@@ -31,10 +35,26 @@ public class RoleService {
     }
 
     public Role update(UUID id, Role roleDetails) {
-        return roleRepository.findById(id).map(role -> {
-            role.setName(roleDetails.getName());
-            return roleRepository.save(role);
-        }).orElseThrow(() -> new RuntimeException("Role não encontrada"));
+        Role existingRole = roleRepository.findById(id)
+                .orElseThrow(() -> new IllegalAccessError("Role não encontrada"));
+
+        validateName(roleDetails.getName(), existingRole);
+
+        existingRole.setName(roleDetails.getName());
+
+        return roleRepository.save(existingRole);
+    }
+
+    private void validateName(String newName, Role existingRole) {
+        if (newName == null) {
+            throw new IllegalAccessError("Nome da role é obrigatório");
+        }
+
+        boolean nameChanged = !newName.equals(existingRole.getName());
+
+        if (nameChanged && roleRepository.existsByName(newName)) {
+            throw new IllegalAccessError("Já existe uma Role com nome '" + newName + "'");
+        }
     }
 
     public void deleteById(UUID id) {
