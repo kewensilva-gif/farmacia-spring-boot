@@ -16,6 +16,9 @@ public class SaleService {
     private SaleRepository saleRepository;
 
     public Sale save(Sale sale) {
+        if (!isValid(sale)) {
+            throw new IllegalArgumentException("Dados da venda inválidos");
+        }
         return saleRepository.save(sale);
     }
 
@@ -40,12 +43,16 @@ public class SaleService {
     }
 
     public Sale update(Long id, Sale saleDetails) {
-        return saleRepository.findById(id).map(sale -> {
-            sale.setTotalPrice(saleDetails.getTotalPrice());
-            sale.setDiscount(saleDetails.getDiscount());
-            sale.setPaymentMethod(saleDetails.getPaymentMethod());
-            return saleRepository.save(sale);
-        }).orElseThrow(() -> new RuntimeException("Venda não encontrada"));
+        if (!isValid(saleDetails)) {
+            throw new IllegalArgumentException("Dados da venda inválidos");
+        }
+
+        Sale sale = saleRepository.findById(id).orElseThrow(() -> new RuntimeException("Venda não encontrada"));
+        sale.setTotalPrice(saleDetails.getTotalPrice());
+        sale.setDiscount(saleDetails.getDiscount());
+        sale.setPaymentMethod(saleDetails.getPaymentMethod());
+
+        return saleRepository.save(sale);
     }
 
     public void deleteById(Long id) {
@@ -54,5 +61,33 @@ public class SaleService {
 
     public boolean existsById(Long id) {
         return saleRepository.existsById(id);
+    }
+
+    public Boolean isValid(Sale sale) {
+        if (sale.getTotalPrice().compareTo(BigDecimal.ZERO) < 0) {
+            return false;
+        }
+        if (sale.getDiscount().compareTo(BigDecimal.ZERO) < 0) {
+            return false;
+        }
+        if (sale.getPaymentMethod() == null) {
+            return false;
+        }
+        if (sale.getDiscount().compareTo(sale.getTotalPrice()) >= 0) {
+            return false;
+        }
+        return true;
+    }
+
+    public void recalculateTotal(Long saleId) {
+        Sale sale = saleRepository.findById(saleId)
+            .orElseThrow(() -> new RuntimeException("Venda não encontrada"));
+
+        BigDecimal total = sale.getSaleProducts().stream()
+            .map(sp -> sp.getUnitPrice().multiply(BigDecimal.valueOf(sp.getQuantity())))
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        sale.setTotalPrice(total.subtract(sale.getDiscount()));
+        saleRepository.save(sale);
     }
 }

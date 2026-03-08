@@ -1,6 +1,5 @@
 package com.kewen.GerenciamentoFarmacia.security;
 
-import com.kewen.GerenciamentoFarmacia.entities.Role;
 import com.kewen.GerenciamentoFarmacia.entities.User;
 import com.kewen.GerenciamentoFarmacia.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;

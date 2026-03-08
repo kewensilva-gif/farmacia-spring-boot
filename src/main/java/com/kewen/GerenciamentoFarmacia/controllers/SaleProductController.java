@@ -34,10 +34,10 @@ public class SaleProductController {
         return ResponseEntity.status(HttpStatus.CREATED).body(saleProductService.save(saleProduct));
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<SaleProduct> update(@PathVariable Long id, @RequestBody SaleProduct saleProduct) {
+    @PatchMapping("/{id}")
+    public ResponseEntity<SaleProduct> updateQuantity(@PathVariable Long id, @RequestBody long Quantity) {
         try {
-            return ResponseEntity.ok(saleProductService.update(id, saleProduct));
+            return ResponseEntity.ok(saleProductService.updateQuantity(id, Quantity));
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }

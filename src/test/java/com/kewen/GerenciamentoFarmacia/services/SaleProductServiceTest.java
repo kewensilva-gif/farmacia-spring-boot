@@ -146,46 +146,6 @@ class SaleProductServiceTest {
     }
 
     // -------------------------------------------------------------------------
-    // update
-    // -------------------------------------------------------------------------
-
-    @Test
-    @DisplayName("update - deve atualizar e retornar o item quando encontrado")
-    void update_deveAtualizarItemQuandoEncontrado() {
-        SaleProduct detalhes = new SaleProduct();
-        detalhes.setSale(sale);
-        detalhes.setProduct(product);
-        detalhes.setQuantity(5L);
-        detalhes.setUnitPrice(new BigDecimal("12.50"));
-
-        SaleProduct atualizado = new SaleProduct();
-        atualizado.setId(1L);
-        atualizado.setQuantity(5L);
-        atualizado.setUnitPrice(new BigDecimal("12.50"));
-
-        when(saleProductRepository.findById(1L)).thenReturn(Optional.of(saleProduct));
-        when(saleProductRepository.save(any(SaleProduct.class))).thenReturn(atualizado);
-
-        SaleProduct result = saleProductService.update(1L, detalhes);
-
-        assertThat(result.getQuantity()).isEqualTo(5L);
-        verify(saleProductRepository, times(1)).findById(1L);
-        verify(saleProductRepository, times(1)).save(any(SaleProduct.class));
-    }
-
-    @Test
-    @DisplayName("update - deve lançar RuntimeException quando item não encontrado")
-    void update_deveLancarExcecaoQuandoNaoEncontrado() {
-        when(saleProductRepository.findById(99L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> saleProductService.update(99L, new SaleProduct()))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("Produto da venda não encontrado");
-
-        verify(saleProductRepository, never()).save(any());
-    }
-
-    // -------------------------------------------------------------------------
     // deleteById / existsById
     // -------------------------------------------------------------------------
 
