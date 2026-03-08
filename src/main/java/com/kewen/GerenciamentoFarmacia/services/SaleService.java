@@ -1,25 +1,63 @@
 package com.kewen.GerenciamentoFarmacia.services;
 
+import com.kewen.GerenciamentoFarmacia.entities.Employee;
 import com.kewen.GerenciamentoFarmacia.entities.Sale;
 import com.kewen.GerenciamentoFarmacia.enums.PaymentMethodEnum;
+import com.kewen.GerenciamentoFarmacia.repositories.EmployeeRepository;
 import com.kewen.GerenciamentoFarmacia.repositories.SaleRepository;
+
+import jakarta.transaction.Transactional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
 @Service
 public class SaleService {
-
     @Autowired
     private SaleRepository saleRepository;
 
+    @Autowired
+    private SaleProductService saleProductService;
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    @Transactional
     public Sale save(Sale sale) {
-        if (!isValid(sale)) {
-            throw new IllegalArgumentException("Dados da venda inválidos");
-        }
+        validateForSave(sale);
+
+        sale.getSaleProducts().forEach(item -> {
+            item.setSale(sale);
+            saleProductService.prepareItem(item);
+        });
+
+        sale.setTotalPrice(calculateTotal(sale));
+
         return saleRepository.save(sale);
+    }
+
+    @Transactional
+    public Sale update(Long id, Sale saleDetails) {
+        validateForUpdate(saleDetails);
+
+        return saleRepository.findById(id).map(sale -> {
+            sale.setDiscount(saleDetails.getDiscount());
+            sale.setPaymentMethod(saleDetails.getPaymentMethod());
+            sale.setTotalPrice(calculateTotal(sale));
+            return saleRepository.save(sale);
+        }).orElseThrow(() -> new RuntimeException("Venda não encontrada"));
+    }
+
+    @Transactional
+    public void deleteById(Long id) {
+        Sale sale = saleRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Venda não encontrada"));
+
+        saleRepository.delete(sale);
     }
 
     public Optional<Sale> findById(Long id) {
@@ -42,52 +80,68 @@ public class SaleService {
         return saleRepository.findByTotalPriceLessThan(price);
     }
 
-    public Sale update(Long id, Sale saleDetails) {
-        if (!isValid(saleDetails)) {
-            throw new IllegalArgumentException("Dados da venda inválidos");
-        }
-
-        Sale sale = saleRepository.findById(id).orElseThrow(() -> new RuntimeException("Venda não encontrada"));
-        sale.setTotalPrice(saleDetails.getTotalPrice());
-        sale.setDiscount(saleDetails.getDiscount());
-        sale.setPaymentMethod(saleDetails.getPaymentMethod());
-
-        return saleRepository.save(sale);
-    }
-
-    public void deleteById(Long id) {
-        saleRepository.deleteById(id);
-    }
-
     public boolean existsById(Long id) {
         return saleRepository.existsById(id);
     }
 
-    public Boolean isValid(Sale sale) {
-        if (sale.getTotalPrice().compareTo(BigDecimal.ZERO) < 0) {
-            return false;
+    private void validateForSave(Sale sale) {
+        if (sale.getEmployee() == null || sale.getEmployee().getId() == null) {
+            throw new IllegalArgumentException("Toda venda precisa de um funcionário responsável");
         }
-        if (sale.getDiscount().compareTo(BigDecimal.ZERO) < 0) {
-            return false;
+
+        Employee employee = employeeRepository.findById(sale.getEmployee().getId())
+            .orElseThrow(() -> new IllegalArgumentException("Funcionário não encontrado"));
+
+        if (employee.getTerminationDate() != null) {
+            throw new IllegalArgumentException("Funcionário desligado não pode registrar vendas");
         }
+
         if (sale.getPaymentMethod() == null) {
-            return false;
+            throw new IllegalArgumentException("O método de pagamento não pode ser nulo");
         }
-        if (sale.getDiscount().compareTo(sale.getTotalPrice()) >= 0) {
-            return false;
+
+        if (sale.getDiscount() == null) {
+            throw new IllegalArgumentException("O desconto não pode ser nulo");
         }
-        return true;
+
+        if (sale.getDiscount().compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("O desconto não pode ser negativo");
+        }
+
+        if (sale.getSaleProducts() == null || sale.getSaleProducts().isEmpty()) {
+            throw new IllegalArgumentException("A venda deve ter ao menos um item");
+        }
     }
 
-    public void recalculateTotal(Long saleId) {
-        Sale sale = saleRepository.findById(saleId)
-            .orElseThrow(() -> new RuntimeException("Venda não encontrada"));
+    private void validateForUpdate(Sale sale) {
+        if (sale.getPaymentMethod() == null) {
+            throw new IllegalArgumentException("O método de pagamento não pode ser nulo");
+        }
 
-        BigDecimal total = sale.getSaleProducts().stream()
+        if (sale.getDiscount() == null) {
+            throw new IllegalArgumentException("O desconto não pode ser nulo");
+        }
+
+        if (sale.getDiscount().compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("O desconto não pode ser negativo");
+        }
+    }
+
+    private BigDecimal calculateTotal(Sale sale) {
+        if (sale.getSaleProducts() == null || sale.getSaleProducts().isEmpty()) {
+            throw new IllegalArgumentException("A venda deve ter ao menos um item");
+        }
+
+        BigDecimal subtotal = sale.getSaleProducts().stream()
             .map(sp -> sp.getUnitPrice().multiply(BigDecimal.valueOf(sp.getQuantity())))
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        sale.setTotalPrice(total.subtract(sale.getDiscount()));
-        saleRepository.save(sale);
+        BigDecimal total = subtotal.subtract(sale.getDiscount());
+
+        if (total.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("O total da venda após desconto deve ser maior que zero");
+        }
+
+        return total;
     }
 }

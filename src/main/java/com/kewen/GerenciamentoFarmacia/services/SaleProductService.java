@@ -6,7 +6,7 @@ import com.kewen.GerenciamentoFarmacia.repositories.SaleProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,16 +15,30 @@ public class SaleProductService {
     @Autowired
     private SaleProductRepository saleProductRepository;
     @Autowired
-    private ProductService productRepository;
-    @Autowired
-    private SaleService saleService;
+    private ProductService productService;
 
-    public SaleProduct save(SaleProduct saleProduct) {
-        if (!isValid(saleProduct)) {
-            throw new IllegalArgumentException("Dados do produto da venda inválidos");
+    public void prepareItem(SaleProduct item) {
+        validate(item);
+
+        Product product = productService.findById(item.getProduct().getId())
+            .orElseThrow(() -> new RuntimeException("Produto não encontrado"));
+
+        if (product.getExpirationDate().isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("Produto vencido não pode ser vendido: " + product.getName());
         }
+        
+        productService.debitStock(product.getId(), item.getQuantity().intValue());
 
-        return saleProductRepository.save(saleProduct);
+        // Manter o preço unitário do produto no item da venda, mesmo que o preço do produto seja atualizado posteriormente
+        item.setUnitPrice(product.getUnitPrice());
+    }
+    
+    public void deleteById(Long id) {
+        SaleProduct item = saleProductRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Item não encontrado"));
+
+        productService.addStock(item.getProduct().getId(), item.getQuantity().intValue());
+        saleProductRepository.delete(item);
     }
 
     public Optional<SaleProduct> findById(Long id) {
@@ -43,43 +57,13 @@ public class SaleProductService {
         return saleProductRepository.findByProductId(productId);
     }
 
-    public SaleProduct updateQuantity(Long id, Long newQuantity) {
-        SaleProduct saleProduct = saleProductRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Item não encontrado"));
-
-        Product product = saleProduct.getProduct();
-        Long oldQuantity = saleProduct.getQuantity();
-        Long diff = newQuantity - oldQuantity;
-
-        if (diff > 0 && product.getStockQuantity() < diff) {
-            throw new IllegalArgumentException("Estoque insuficiente");
-        }
-
-        product.setStockQuantity((int) (product.getStockQuantity() - diff));
-        productRepository.save(product);
-
-        saleProduct.setQuantity(newQuantity);
-        SaleProduct updated = saleProductRepository.save(saleProduct);
-
-        saleService.recalculateTotal(saleProduct.getSale().getId());
-
-        return updated;
-    }
-    public void deleteById(Long id) {
-        saleProductRepository.deleteById(id);
-    }
-
     public boolean existsById(Long id) {
         return saleProductRepository.existsById(id);
     }
 
-    public Boolean isValid(SaleProduct saleProduct) {
+    public void validate(SaleProduct saleProduct) {
         if (saleProduct.getQuantity() <= 0) {
-            return false;
+            throw new IllegalArgumentException("A quantidade do produto da venda deve ser positiva");
         }
-        if (saleProduct.getUnitPrice().compareTo(BigDecimal.ZERO) < 0) {
-            return false;
-        }
-        return true;
     }
 }

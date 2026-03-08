@@ -3,7 +3,6 @@ package com.kewen.GerenciamentoFarmacia.controllers;
 import com.kewen.GerenciamentoFarmacia.entities.SaleProduct;
 import com.kewen.GerenciamentoFarmacia.services.SaleProductService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,20 +26,6 @@ public class SaleProductController {
         return saleProductService.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PostMapping
-    public ResponseEntity<SaleProduct> create(@RequestBody SaleProduct saleProduct) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(saleProductService.save(saleProduct));
-    }
-
-    @PatchMapping("/{id}")
-    public ResponseEntity<SaleProduct> updateQuantity(@PathVariable Long id, @RequestBody long Quantity) {
-        try {
-            return ResponseEntity.ok(saleProductService.updateQuantity(id, Quantity));
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
     }
 
     @DeleteMapping("/{id}")

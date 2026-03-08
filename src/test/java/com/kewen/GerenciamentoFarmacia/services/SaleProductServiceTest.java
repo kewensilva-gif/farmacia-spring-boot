@@ -19,8 +19,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -56,23 +54,6 @@ class SaleProductServiceTest {
         saleProduct.setProduct(product);
         saleProduct.setQuantity(2L);
         saleProduct.setUnitPrice(new BigDecimal("12.50"));
-    }
-
-    // -------------------------------------------------------------------------
-    // save
-    // -------------------------------------------------------------------------
-
-    @Test
-    @DisplayName("save - deve salvar e retornar o item da venda")
-    void save_deveSalvarERetornarSaleProduct() {
-        when(saleProductRepository.save(any(SaleProduct.class))).thenReturn(saleProduct);
-
-        SaleProduct result = saleProductService.save(saleProduct);
-
-        assertThat(result).isNotNull();
-        assertThat(result.getId()).isEqualTo(1L);
-        assertThat(result.getQuantity()).isEqualTo(2L);
-        verify(saleProductRepository, times(1)).save(saleProduct);
     }
 
     // -------------------------------------------------------------------------
