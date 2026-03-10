@@ -44,7 +44,7 @@ public class SaleService {
     public Sale update(Long id, Sale saleDetails) {
         validateForUpdate(saleDetails);
 
-        return saleRepository.findById(id).map(sale -> {
+        return saleRepository.findByIdAndEnabledTrue(id).map(sale -> {
             sale.setDiscount(saleDetails.getDiscount());
             sale.setPaymentMethod(saleDetails.getPaymentMethod());
             sale.setTotalPrice(calculateTotal(sale));
@@ -54,30 +54,38 @@ public class SaleService {
 
     @Transactional
     public void deleteById(Long id) {
-        Sale sale = saleRepository.findById(id)
+        Sale sale = saleRepository.findByIdAndEnabledTrue(id)
             .orElseThrow(() -> new RuntimeException("Venda não encontrada"));
 
-        saleRepository.delete(sale);
+        // Restaurar estoque dos produtos ao cancelar a venda
+        if (sale.getSaleProducts() != null) {
+            sale.getSaleProducts().forEach(item ->
+                saleProductService.restoreStock(item)
+            );
+        }
+
+        sale.setEnabled(false);
+        saleRepository.save(sale);
     }
 
     public Optional<Sale> findById(Long id) {
-        return saleRepository.findById(id);
+        return saleRepository.findByIdAndEnabledTrue(id);
     }
 
     public List<Sale> findAll() {
-        return saleRepository.findAll();
+        return saleRepository.findByEnabledTrue();
     }
 
     public List<Sale> findByPaymentMethod(PaymentMethodEnum paymentMethod) {
-        return saleRepository.findByPaymentMethod(paymentMethod);
+        return saleRepository.findByPaymentMethodAndEnabledTrue(paymentMethod);
     }
 
     public List<Sale> findByPriceGreaterThan(BigDecimal price) {
-        return saleRepository.findByTotalPriceGreaterThan(price);
+        return saleRepository.findByTotalPriceGreaterThanAndEnabledTrue(price);
     }
 
     public List<Sale> findByPriceLessThan(BigDecimal price) {
-        return saleRepository.findByTotalPriceLessThan(price);
+        return saleRepository.findByTotalPriceLessThanAndEnabledTrue(price);
     }
 
     public boolean existsById(Long id) {

@@ -2,6 +2,7 @@ package com.kewen.GerenciamentoFarmacia.services;
 
 import com.kewen.GerenciamentoFarmacia.entities.Role;
 import com.kewen.GerenciamentoFarmacia.repositories.RoleRepository;
+import com.kewen.GerenciamentoFarmacia.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -13,6 +14,9 @@ public class RoleService {
 
     @Autowired
     private RoleRepository roleRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     public Role save(Role role) {
         if (roleRepository.existsByName(role.getName())) {
@@ -36,7 +40,7 @@ public class RoleService {
 
     public Role update(UUID id, Role roleDetails) {
         Role existingRole = roleRepository.findById(id)
-                .orElseThrow(() -> new IllegalAccessError("Role não encontrada"));
+                .orElseThrow(() -> new IllegalArgumentException("Role não encontrada"));
 
         validateName(roleDetails.getName(), existingRole);
 
@@ -47,18 +51,25 @@ public class RoleService {
 
     private void validateName(String newName, Role existingRole) {
         if (newName == null) {
-            throw new IllegalAccessError("Nome da role é obrigatório");
+            throw new IllegalArgumentException("Nome da role é obrigatório");
         }
 
         boolean nameChanged = !newName.equals(existingRole.getName());
 
         if (nameChanged && roleRepository.existsByName(newName)) {
-            throw new IllegalAccessError("Já existe uma Role com nome '" + newName + "'");
+            throw new IllegalArgumentException("Já existe uma Role com nome '" + newName + "'");
         }
     }
 
     public void deleteById(UUID id) {
-        roleRepository.deleteById(id);
+        Role role = roleRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Role não encontrada"));
+
+        if (userRepository.existsByRoleUuid(id)) {
+            throw new IllegalStateException("Role não pode ser excluída pois está vinculada a usuários");
+        }
+
+        roleRepository.delete(role);
     }
 
     public boolean existsById(UUID id) {

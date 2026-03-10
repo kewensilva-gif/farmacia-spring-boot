@@ -2,7 +2,6 @@ package com.kewen.GerenciamentoFarmacia.services;
 
 import com.kewen.GerenciamentoFarmacia.entities.Product;
 import com.kewen.GerenciamentoFarmacia.repositories.ProductRepository;
-import com.kewen.GerenciamentoFarmacia.repositories.SaleProductRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,8 +17,6 @@ public class ProductService {
     private ProductRepository productRepository;
     @Autowired
     private CategoryService categoryService;
-    @Autowired
-    private SaleProductRepository saleProductRepository;
 
     public Product save(Product product) {
         validateForSave(product);
@@ -27,37 +24,37 @@ public class ProductService {
     }
 
     public Optional<Product> findById(Long id) {
-        return productRepository.findById(id);
+        return productRepository.findByIdAndEnabledTrue(id);
     }
 
     public List<Product> findAll() {
-        return productRepository.findAll();
+        return productRepository.findByEnabledTrue();
     }
 
     public Optional<Product> findByBarcode(String barcode) {
-        return productRepository.findByBarcode(barcode);
+        return productRepository.findByBarcodeAndEnabledTrue(barcode);
     }
 
     public List<Product> findByName(String name) {
-        return productRepository.findByNameContainingIgnoreCase(name);
+        return productRepository.findByNameContainingIgnoreCaseAndEnabledTrue(name);
     }
 
     public List<Product> findByCategory(Long categoryId) {
-        return productRepository.findByCategoryId(categoryId);
+        return productRepository.findByCategoryIdAndEnabledTrue(categoryId);
     }
 
     public List<Product> findExpiredProducts() {
-        return productRepository.findByExpirationDateBefore(LocalDate.now());
+        return productRepository.findByExpirationDateBeforeAndEnabledTrue(LocalDate.now());
     }
 
     public List<Product> findLowStockProducts(Integer quantity) {
-        return productRepository.findByStockQuantityLessThan(quantity);
+        return productRepository.findByStockQuantityLessThanAndEnabledTrue(quantity);
     }
 
     public Product update(Long id, Product productDetails) {
         validateForUpdate(id, productDetails);
 
-        return productRepository.findById(id).map(product -> {
+        return productRepository.findByIdAndEnabledTrue(id).map(product -> {
             product.setName(productDetails.getName());
             product.setUnitPrice(productDetails.getUnitPrice());
             product.setBarcode(productDetails.getBarcode());
@@ -73,7 +70,7 @@ public class ProductService {
             throw new IllegalArgumentException("A quantidade a debitar deve ser positiva");
         }
 
-        Product product = productRepository.findById(id)
+        Product product = productRepository.findByIdAndEnabledTrue(id)
             .orElseThrow(() -> new RuntimeException("Produto não encontrado"));
 
         if (product.getStockQuantity() < quantity) {
@@ -100,14 +97,11 @@ public class ProductService {
     }
 
     public void deleteById(Long id) {
-        Product product = productRepository.findById(id)
+        Product product = productRepository.findByIdAndEnabledTrue(id)
             .orElseThrow(() -> new RuntimeException("Produto não encontrado"));
 
-        if (saleProductRepository.existsByProductId(id)) {
-            throw new IllegalStateException("Produto não pode ser excluído pois está vinculado a vendas");
-        }
-
-        productRepository.delete(product);
+        product.setEnabled(false);
+        productRepository.save(product);
     }
 
     public boolean existsById(Long id) {
@@ -135,6 +129,9 @@ public class ProductService {
     private void validateForUpdate(Long id, Product product) {
         if (product.getUnitPrice().compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("O preço unitário não pode ser zero ou negativo");
+        }
+        if (product.getExpirationDate() != null && product.getExpirationDate().isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("A data de validade não pode ser anterior à data atual");
         }
         if (categoryService.findById(product.getCategory().getId()).isEmpty()) {
             throw new IllegalArgumentException("Categoria não encontrada");

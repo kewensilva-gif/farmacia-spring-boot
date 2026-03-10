@@ -21,7 +21,7 @@ public class SaleProductService {
         validate(item);
 
         Product product = productService.findById(item.getProduct().getId())
-            .orElseThrow(() -> new RuntimeException("Produto não encontrado"));
+            .orElseThrow(() -> new RuntimeException("Produto não encontrado ou desativado"));
 
         if (product.getExpirationDate().isBefore(LocalDate.now())) {
             throw new IllegalArgumentException("Produto vencido não pode ser vendido: " + product.getName());
@@ -37,8 +37,12 @@ public class SaleProductService {
         SaleProduct item = saleProductRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Item não encontrado"));
 
-        productService.addStock(item.getProduct().getId(), item.getQuantity().intValue());
+        restoreStock(item);
         saleProductRepository.delete(item);
+    }
+
+    public void restoreStock(SaleProduct item) {
+        productService.addStock(item.getProduct().getId(), item.getQuantity().intValue());
     }
 
     public Optional<SaleProduct> findById(Long id) {
