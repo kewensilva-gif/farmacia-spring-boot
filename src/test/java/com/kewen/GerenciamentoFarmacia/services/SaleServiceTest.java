@@ -1,7 +1,8 @@
 package com.kewen.GerenciamentoFarmacia.services;
 
-import com.kewen.GerenciamentoFarmacia.entities.Sale;
+import com.kewen.GerenciamentoFarmacia.entities.*;
 import com.kewen.GerenciamentoFarmacia.enums.PaymentMethodEnum;
+import com.kewen.GerenciamentoFarmacia.repositories.EmployeeRepository;
 import com.kewen.GerenciamentoFarmacia.repositories.SaleRepository;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,213 +29,271 @@ class SaleServiceTest {
     @Mock
     private SaleRepository saleRepository;
 
+    @Mock
+    private SaleProductService saleProductService;
+
+    @Mock
+    private EmployeeRepository employeeRepository;
+
     @InjectMocks
     private SaleService saleService;
 
     private Sale sale;
+    private Employee employee;
+    private Product product;
+    private SaleProduct saleProduct;
 
     @BeforeEach
     void setUp() {
+        employee = new Employee();
+        employee.setId(1L);
+        employee.setTerminationDate(null);
+
+        product = new Product();
+        product.setId(1L);
+        product.setName("Paracetamol 500mg");
+        product.setUnitPrice(new BigDecimal("12.50"));
+        product.setEnabled(true);
+
+        saleProduct = new SaleProduct();
+        saleProduct.setId(1L);
+        saleProduct.setProduct(product);
+        saleProduct.setQuantity(2L);
+        saleProduct.setUnitPrice(new BigDecimal("12.50"));
+
         sale = new Sale();
         sale.setId(1L);
-        sale.setTotalPrice(new BigDecimal("150.00"));
-        sale.setDiscount(new BigDecimal("10.00"));
-        sale.setPaymentMethod(PaymentMethodEnum.CREDITCARD);
+        sale.setEmployee(employee);
+        sale.setPaymentMethod(PaymentMethodEnum.PIX);
+        sale.setDiscount(BigDecimal.ZERO);
+        sale.setSaleProducts(new ArrayList<>(List.of(saleProduct)));
+        sale.setEnabled(true);
     }
 
-    // -------------------------------------------------------------------------
-    // save
-    // -------------------------------------------------------------------------
+    // ======================== SAVE ========================
 
     @Test
-    @DisplayName("save - deve salvar e retornar a venda")
-    void save_deveSalvarERetornarVenda() {
+    @DisplayName("save - deve salvar venda com sucesso")
+    void save_deveSalvarVendaComSucesso() {
+        when(employeeRepository.findById(1L)).thenReturn(Optional.of(employee));
         when(saleRepository.save(any(Sale.class))).thenReturn(sale);
 
         Sale result = saleService.save(sale);
 
         assertThat(result).isNotNull();
-        assertThat(result.getId()).isEqualTo(1L);
-        assertThat(result.getTotalPrice()).isEqualByComparingTo("150.00");
-        assertThat(result.getPaymentMethod()).isEqualTo(PaymentMethodEnum.CREDITCARD);
-        verify(saleRepository, times(1)).save(sale);
+        verify(saleProductService).prepareItem(any(SaleProduct.class));
+        verify(saleRepository).save(sale);
     }
 
-    // -------------------------------------------------------------------------
-    // findById
-    // -------------------------------------------------------------------------
+    @Test
+    @DisplayName("save - deve lançar exceção quando funcionário é nulo")
+    void save_deveLancarExcecaoQuandoFuncionarioNulo() {
+        sale.setEmployee(null);
+
+        assertThatThrownBy(() -> saleService.save(sale))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Toda venda precisa de um funcionário responsável");
+    }
 
     @Test
-    @DisplayName("findById - deve retornar Optional com venda quando encontrada")
-    void findById_deveRetornarVendaQuandoEncontrada() {
-        when(saleRepository.findById(1L)).thenReturn(Optional.of(sale));
+    @DisplayName("save - deve lançar exceção quando funcionário não encontrado")
+    void save_deveLancarExcecaoQuandoFuncionarioNaoEncontrado() {
+        when(employeeRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> saleService.save(sale))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Funcionário não encontrado");
+    }
+
+    @Test
+    @DisplayName("save - deve lançar exceção quando funcionário está desligado")
+    void save_deveLancarExcecaoQuandoFuncionarioDesligado() {
+        employee.setTerminationDate(java.time.LocalDate.of(2024, 1, 1));
+        when(employeeRepository.findById(1L)).thenReturn(Optional.of(employee));
+
+        assertThatThrownBy(() -> saleService.save(sale))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Funcionário desligado não pode registrar vendas");
+    }
+
+    @Test
+    @DisplayName("save - deve lançar exceção quando método de pagamento é nulo")
+    void save_deveLancarExcecaoQuandoMetodoPagamentoNulo() {
+        sale.setPaymentMethod(null);
+        when(employeeRepository.findById(1L)).thenReturn(Optional.of(employee));
+
+        assertThatThrownBy(() -> saleService.save(sale))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("O método de pagamento não pode ser nulo");
+    }
+
+    @Test
+    @DisplayName("save - deve lançar exceção quando desconto é nulo")
+    void save_deveLancarExcecaoQuandoDescontoNulo() {
+        sale.setDiscount(null);
+        when(employeeRepository.findById(1L)).thenReturn(Optional.of(employee));
+
+        assertThatThrownBy(() -> saleService.save(sale))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("O desconto não pode ser nulo");
+    }
+
+    @Test
+    @DisplayName("save - deve lançar exceção quando desconto é negativo")
+    void save_deveLancarExcecaoQuandoDescontoNegativo() {
+        sale.setDiscount(new BigDecimal("-10.00"));
+        when(employeeRepository.findById(1L)).thenReturn(Optional.of(employee));
+
+        assertThatThrownBy(() -> saleService.save(sale))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("O desconto não pode ser negativo");
+    }
+
+    @Test
+    @DisplayName("save - deve lançar exceção quando venda não tem itens")
+    void save_deveLancarExcecaoQuandoSemItens() {
+        sale.setSaleProducts(new ArrayList<>());
+        when(employeeRepository.findById(1L)).thenReturn(Optional.of(employee));
+
+        assertThatThrownBy(() -> saleService.save(sale))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("A venda deve ter ao menos um item");
+    }
+
+    // ======================== FIND ========================
+
+    @Test
+    @DisplayName("findById - deve retornar venda ativa")
+    void findById_deveRetornarVendaAtiva() {
+        when(saleRepository.findByIdAndEnabledTrue(1L)).thenReturn(Optional.of(sale));
 
         Optional<Sale> result = saleService.findById(1L);
 
         assertThat(result).isPresent();
-        assertThat(result.get().getDiscount()).isEqualByComparingTo("10.00");
-        verify(saleRepository, times(1)).findById(1L);
+        verify(saleRepository).findByIdAndEnabledTrue(1L);
     }
 
     @Test
-    @DisplayName("findById - deve retornar Optional vazio quando não encontrada")
+    @DisplayName("findById - deve retornar vazio para venda não encontrada")
     void findById_deveRetornarVazioQuandoNaoEncontrada() {
-        when(saleRepository.findById(99L)).thenReturn(Optional.empty());
+        when(saleRepository.findByIdAndEnabledTrue(99L)).thenReturn(Optional.empty());
 
         Optional<Sale> result = saleService.findById(99L);
 
         assertThat(result).isEmpty();
-        verify(saleRepository, times(1)).findById(99L);
     }
 
-    // -------------------------------------------------------------------------
-    // findAll
-    // -------------------------------------------------------------------------
-
     @Test
-    @DisplayName("findAll - deve retornar lista de vendas")
-    void findAll_deveRetornarListaDeVendas() {
-        Sale outra = new Sale();
-        outra.setId(2L);
-        outra.setTotalPrice(new BigDecimal("50.00"));
-        outra.setDiscount(new BigDecimal("0.00"));
-        outra.setPaymentMethod(PaymentMethodEnum.PIX);
-
-        when(saleRepository.findAll()).thenReturn(List.of(sale, outra));
+    @DisplayName("findAll - deve retornar apenas vendas ativas")
+    void findAll_deveRetornarVendasAtivas() {
+        when(saleRepository.findByEnabledTrue()).thenReturn(List.of(sale));
 
         List<Sale> result = saleService.findAll();
 
-        assertThat(result).hasSize(2);
-        verify(saleRepository, times(1)).findAll();
+        assertThat(result).hasSize(1);
+        verify(saleRepository).findByEnabledTrue();
     }
 
     @Test
-    @DisplayName("findAll - deve retornar lista vazia quando não há vendas")
-    void findAll_deveRetornarListaVazia() {
-        when(saleRepository.findAll()).thenReturn(List.of());
+    @DisplayName("findByPaymentMethod - deve buscar por método de pagamento com enabled")
+    void findByPaymentMethod_deveBuscarPorMetodoPagamentoEEnabled() {
+        when(saleRepository.findByPaymentMethodAndEnabledTrue(PaymentMethodEnum.PIX)).thenReturn(List.of(sale));
 
-        List<Sale> result = saleService.findAll();
-
-        assertThat(result).isEmpty();
-        verify(saleRepository, times(1)).findAll();
-    }
-
-    // -------------------------------------------------------------------------
-    // findByPaymentMethod
-    // -------------------------------------------------------------------------
-
-    @Test
-    @DisplayName("findByPaymentMethod - deve retornar vendas pelo método de pagamento")
-    void findByPaymentMethod_deveRetornarVendasPorMetodoDePagamento() {
-        when(saleRepository.findByPaymentMethod(PaymentMethodEnum.CREDITCARD)).thenReturn(List.of(sale));
-
-        List<Sale> result = saleService.findByPaymentMethod(PaymentMethodEnum.CREDITCARD);
+        List<Sale> result = saleService.findByPaymentMethod(PaymentMethodEnum.PIX);
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getPaymentMethod()).isEqualTo(PaymentMethodEnum.CREDITCARD);
-        verify(saleRepository, times(1)).findByPaymentMethod(PaymentMethodEnum.CREDITCARD);
+        verify(saleRepository).findByPaymentMethodAndEnabledTrue(PaymentMethodEnum.PIX);
     }
 
-    // -------------------------------------------------------------------------
-    // findByPriceGreaterThan / findByPriceLessThan
-    // -------------------------------------------------------------------------
-
     @Test
-    @DisplayName("findByPriceGreaterThan - deve retornar vendas com preço maior que o informado")
-    void findByPriceGreaterThan_deveRetornarVendas() {
-        BigDecimal preco = new BigDecimal("100.00");
-        when(saleRepository.findByTotalPriceGreaterThan(preco)).thenReturn(List.of(sale));
+    @DisplayName("findByPriceGreaterThan - deve buscar vendas com preço maior que")
+    void findByPriceGreaterThan_deveBuscarVendasComPrecoMaiorQue() {
+        when(saleRepository.findByTotalPriceGreaterThanAndEnabledTrue(new BigDecimal("10.00"))).thenReturn(List.of(sale));
 
-        List<Sale> result = saleService.findByPriceGreaterThan(preco);
+        List<Sale> result = saleService.findByPriceGreaterThan(new BigDecimal("10.00"));
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getTotalPrice()).isGreaterThan(preco);
-        verify(saleRepository, times(1)).findByTotalPriceGreaterThan(preco);
+        verify(saleRepository).findByTotalPriceGreaterThanAndEnabledTrue(new BigDecimal("10.00"));
     }
 
     @Test
-    @DisplayName("findByPriceLessThan - deve retornar vendas com preço menor que o informado")
-    void findByPriceLessThan_deveRetornarVendas() {
-        BigDecimal preco = new BigDecimal("200.00");
-        when(saleRepository.findByTotalPriceLessThan(preco)).thenReturn(List.of(sale));
+    @DisplayName("findByPriceLessThan - deve buscar vendas com preço menor que")
+    void findByPriceLessThan_deveBuscarVendasComPrecoMenorQue() {
+        when(saleRepository.findByTotalPriceLessThanAndEnabledTrue(new BigDecimal("100.00"))).thenReturn(List.of(sale));
 
-        List<Sale> result = saleService.findByPriceLessThan(preco);
+        List<Sale> result = saleService.findByPriceLessThan(new BigDecimal("100.00"));
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getTotalPrice()).isLessThan(preco);
-        verify(saleRepository, times(1)).findByTotalPriceLessThan(preco);
+        verify(saleRepository).findByTotalPriceLessThanAndEnabledTrue(new BigDecimal("100.00"));
     }
 
-    // -------------------------------------------------------------------------
-    // update
-    // -------------------------------------------------------------------------
+    // ======================== UPDATE ========================
 
     @Test
-    @DisplayName("update - deve atualizar e retornar a venda quando encontrada")
-    void update_deveAtualizarVendaQuandoEncontrada() {
-        Sale detalhes = new Sale();
-        detalhes.setTotalPrice(new BigDecimal("200.00"));
-        detalhes.setDiscount(new BigDecimal("20.00"));
-        detalhes.setPaymentMethod(PaymentMethodEnum.DEBITCARD);
+    @DisplayName("update - deve atualizar venda existente")
+    void update_deveAtualizarVendaExistente() {
+        Sale updated = new Sale();
+        updated.setPaymentMethod(PaymentMethodEnum.CREDITCARD);
+        updated.setDiscount(new BigDecimal("5.00"));
 
-        Sale atualizada = new Sale();
-        atualizada.setId(1L);
-        atualizada.setTotalPrice(new BigDecimal("200.00"));
-        atualizada.setDiscount(new BigDecimal("20.00"));
-        atualizada.setPaymentMethod(PaymentMethodEnum.DEBITCARD);
+        when(saleRepository.findByIdAndEnabledTrue(1L)).thenReturn(Optional.of(sale));
+        when(saleRepository.save(any(Sale.class))).thenReturn(sale);
 
-        when(saleRepository.findById(1L)).thenReturn(Optional.of(sale));
-        when(saleRepository.save(any(Sale.class))).thenReturn(atualizada);
+        Sale result = saleService.update(1L, updated);
 
-        Sale result = saleService.update(1L, detalhes);
-
-        assertThat(result.getTotalPrice()).isEqualByComparingTo("200.00");
-        assertThat(result.getPaymentMethod()).isEqualTo(PaymentMethodEnum.DEBITCARD);
-        verify(saleRepository, times(1)).findById(1L);
-        verify(saleRepository, times(1)).save(any(Sale.class));
+        assertThat(result).isNotNull();
+        verify(saleRepository).save(any(Sale.class));
     }
 
     @Test
-    @DisplayName("update - deve lançar RuntimeException quando venda não encontrada")
-    void update_deveLancarExcecaoQuandoNaoEncontrada() {
-        when(saleRepository.findById(99L)).thenReturn(Optional.empty());
+    @DisplayName("update - deve lançar exceção para venda não encontrada")
+    void update_deveLancarExcecaoParaVendaNaoEncontrada() {
+        Sale updated = new Sale();
+        updated.setPaymentMethod(PaymentMethodEnum.PIX);
+        updated.setDiscount(BigDecimal.ZERO);
 
-        assertThatThrownBy(() -> saleService.update(99L, new Sale()))
+        when(saleRepository.findByIdAndEnabledTrue(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> saleService.update(1L, updated))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("Venda não encontrada");
-
-        verify(saleRepository, never()).save(any());
     }
 
-    // -------------------------------------------------------------------------
-    // deleteById / existsById
-    // -------------------------------------------------------------------------
+    @Test
+    @DisplayName("update - deve lançar exceção para método de pagamento nulo")
+    void update_deveLancarExcecaoParaMetodoPagamentoNulo() {
+        Sale updated = new Sale();
+        updated.setPaymentMethod(null);
+        updated.setDiscount(BigDecimal.ZERO);
+
+        assertThatThrownBy(() -> saleService.update(1L, updated))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("O método de pagamento não pode ser nulo");
+    }
+
+    // ======================== SOFT DELETE ========================
 
     @Test
-    @DisplayName("deleteById - deve chamar deleteById no repositório")
-    void deleteById_deveChamarDeleteById() {
-        doNothing().when(saleRepository).deleteById(1L);
+    @DisplayName("deleteById - deve desativar venda e restaurar estoque (soft delete)")
+    void deleteById_deveDesativarVendaERestaurarEstoque() {
+        when(saleRepository.findByIdAndEnabledTrue(1L)).thenReturn(Optional.of(sale));
+        when(saleRepository.save(any(Sale.class))).thenReturn(sale);
 
         saleService.deleteById(1L);
 
-        verify(saleRepository, times(1)).deleteById(1L);
+        assertThat(sale.getEnabled()).isFalse();
+        verify(saleProductService).restoreStock(saleProduct);
+        verify(saleRepository).save(sale);
+        verify(saleRepository, never()).delete(any(Sale.class));
     }
 
     @Test
-    @DisplayName("existsById - deve retornar true quando venda existe")
-    void existsById_deveRetornarTrueQuandoExiste() {
-        when(saleRepository.existsById(1L)).thenReturn(true);
+    @DisplayName("deleteById - deve lançar exceção para venda não encontrada")
+    void deleteById_deveLancarExcecaoParaVendaNaoEncontrada() {
+        when(saleRepository.findByIdAndEnabledTrue(1L)).thenReturn(Optional.empty());
 
-        assertThat(saleService.existsById(1L)).isTrue();
-        verify(saleRepository, times(1)).existsById(1L);
-    }
-
-    @Test
-    @DisplayName("existsById - deve retornar false quando venda não existe")
-    void existsById_deveRetornarFalseQuandoNaoExiste() {
-        when(saleRepository.existsById(99L)).thenReturn(false);
-
-        assertThat(saleService.existsById(99L)).isFalse();
-        verify(saleRepository, times(1)).existsById(99L);
+        assertThatThrownBy(() -> saleService.deleteById(1L))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Venda não encontrada");
     }
 }
