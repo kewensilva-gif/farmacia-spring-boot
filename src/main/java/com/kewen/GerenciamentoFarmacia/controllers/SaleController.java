@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/sales")
@@ -32,26 +33,33 @@ public class SaleController {
     }
 
     @PostMapping
-    public ResponseEntity<Sale> create(@RequestBody Sale sale) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(saleService.save(sale));
+    public ResponseEntity<?> create(@RequestBody Sale sale) {
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED).body(saleService.save(sale));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Sale> update(@PathVariable Long id, @RequestBody Sale sale) {
+    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody Sale sale) {
         try {
             return ResponseEntity.ok(saleService.update(id, sale));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        if (saleService.existsById(id)) {
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+        try {
             saleService.deleteById(id);
             return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.notFound().build();
     }
 
     @GetMapping("/search/payment-method")

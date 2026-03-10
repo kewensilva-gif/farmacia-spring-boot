@@ -29,12 +29,13 @@ public class SaleProductController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        if (saleProductService.existsById(id)) {
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+        try {
             saleProductService.deleteById(id);
             return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.notFound().build();
     }
 
     @GetMapping("/search/sale/{saleId}")

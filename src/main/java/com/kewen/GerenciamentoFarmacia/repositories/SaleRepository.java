@@ -7,10 +7,20 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface SaleRepository extends JpaRepository<Sale, Long> {
     List<Sale> findByPaymentMethod(PaymentMethodEnum paymentMethod);
     List<Sale> findByTotalPriceGreaterThan(BigDecimal price);
     List<Sale> findByTotalPriceLessThan(BigDecimal price);
+    boolean existsByEmployeeId(Long employeeId);
+    boolean existsByCustomerId(Long customerId);
+
+    // Queries para soft delete
+    List<Sale> findByEnabledTrue();
+    Optional<Sale> findByIdAndEnabledTrue(Long id);
+    List<Sale> findByPaymentMethodAndEnabledTrue(PaymentMethodEnum paymentMethod);
+    List<Sale> findByTotalPriceGreaterThanAndEnabledTrue(BigDecimal price);
+    List<Sale> findByTotalPriceLessThanAndEnabledTrue(BigDecimal price);
 }

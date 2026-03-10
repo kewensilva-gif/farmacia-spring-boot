@@ -4,6 +4,7 @@ import com.kewen.GerenciamentoFarmacia.entities.User;
 import com.kewen.GerenciamentoFarmacia.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
@@ -11,15 +12,17 @@ import java.util.UUID;
 
 @Service
 public class UserService {
-
+    @Autowired
+    private PasswordEncoder passwordEncoder;
     @Autowired
     private UserRepository userRepository;
 
     public User save(User user) {
         try {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
             return userRepository.save(user);
         } catch (DataIntegrityViolationException ex) {
-            throw new IllegalAccessError("Username ou email já existe");
+            throw new IllegalArgumentException("Username ou email já existe");
         }
     }
 
@@ -69,7 +72,7 @@ public class UserService {
         boolean usernameChanged = !newUsername.equals(existingUser.getUsername());
 
         if (usernameChanged && userRepository.existsByUsername(newUsername)) {
-            throw new IllegalAccessError("Username já existe");
+            throw new IllegalArgumentException("Username já existe");
         }
     }
 
@@ -79,7 +82,7 @@ public class UserService {
         boolean emailChanged = !newEmail.equals(existingUser.getEmail());
 
         if (emailChanged && userRepository.existsByEmail(newEmail)) {
-            throw new IllegalAccessError("Email já existe");
+            throw new IllegalArgumentException("Email já existe");
         }
     }
 
@@ -93,7 +96,7 @@ public class UserService {
         }
 
         if (userDetails.getPassword() != null) {
-            existingUser.setPassword(userDetails.getPassword());
+            existingUser.setPassword(passwordEncoder.encode(userDetails.getPassword()));
         }
 
         if (userDetails.getEnabled() != null) {

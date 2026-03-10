@@ -19,4 +19,7 @@ public class Category {
 
     @Column(name = "name", nullable = false, length = 40, unique = true)
     private String name;
+
+    @Column(name = "enabled", nullable = false)
+    private Boolean enabled = true;
 }

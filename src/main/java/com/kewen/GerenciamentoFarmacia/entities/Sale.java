@@ -37,6 +37,9 @@ public class Sale {
     @JoinColumn(name = "customer_id", nullable = true)
     private Customer customer;
 
+    @Column(name = "enabled", nullable = false)
+    private Boolean enabled = true;
+
     @OneToMany(mappedBy = "sale", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SaleProduct> saleProducts;
 }

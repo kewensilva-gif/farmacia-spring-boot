@@ -11,6 +11,7 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -20,6 +21,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
+@EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -46,6 +48,7 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.PUT, "/api/sales/**", "/api/sale-products/**").hasAnyRole("ADMIN", "EMPLOYEE")
                     .requestMatchers(HttpMethod.DELETE, "/api/sales/**", "/api/sale-products/**").hasAnyRole("ADMIN", "EMPLOYEE")
                     .requestMatchers("/api/users/**", "/api/roles/**", "/api/employees/**").hasRole("ADMIN")
+                    .requestMatchers("/api/admin/**").hasRole("ADMIN")
                     .requestMatchers(HttpMethod.GET, "/api/customers/**").hasAnyRole("ADMIN", "EMPLOYEE", "CUSTOMER")
                     .requestMatchers(HttpMethod.POST, "/api/customers/**").hasAnyRole("ADMIN", "EMPLOYEE")
                     .requestMatchers(HttpMethod.PUT, "/api/customers/**").hasAnyRole("ADMIN", "EMPLOYEE")

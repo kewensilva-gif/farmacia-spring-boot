@@ -41,6 +41,9 @@ public class Product {
     @Column(name = "path_image", length = 300)
     private String pathImage;
 
+    @Column(name = "enabled", nullable = false)
+    private Boolean enabled = true;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;

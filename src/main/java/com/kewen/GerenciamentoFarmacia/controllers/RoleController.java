@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -31,26 +32,35 @@ public class RoleController {
     }
 
     @PostMapping
-    public ResponseEntity<Role> create(@RequestBody Role role) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(roleService.save(role));
+    public ResponseEntity<?> create(@RequestBody Role role) {
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED).body(roleService.save(role));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Role> update(@PathVariable UUID id, @RequestBody Role role) {
+    public ResponseEntity<?> update(@PathVariable UUID id, @RequestBody Role role) {
         try {
             return ResponseEntity.ok(roleService.update(id, role));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
-        if (roleService.existsById(id)) {
+    public ResponseEntity<?> delete(@PathVariable UUID id) {
+        try {
             roleService.deleteById(id);
             return ResponseEntity.noContent().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", e.getMessage()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.notFound().build();
     }
 
     @GetMapping("/search/name")

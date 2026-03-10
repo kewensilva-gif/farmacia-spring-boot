@@ -16,4 +16,14 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> findByCategoryId(Long categoryId);
     List<Product> findByExpirationDateBefore(LocalDate date);
     List<Product> findByStockQuantityLessThan(Integer quantity);
+
+    // Queries para soft delete
+    List<Product> findByEnabledTrue();
+    Optional<Product> findByIdAndEnabledTrue(Long id);
+    Optional<Product> findByBarcodeAndEnabledTrue(String barcode);
+    List<Product> findByNameContainingIgnoreCaseAndEnabledTrue(String name);
+    List<Product> findByCategoryIdAndEnabledTrue(Long categoryId);
+    List<Product> findByExpirationDateBeforeAndEnabledTrue(LocalDate date);
+    List<Product> findByStockQuantityLessThanAndEnabledTrue(Integer quantity);
+    boolean existsByCategoryIdAndEnabledTrue(Long categoryId);
 }

@@ -31,4 +31,10 @@ public class Person {
     @OneToOne
     @JoinColumn(name = "user_uuid", nullable = false)
     private User user;
+
+    @OneToOne(mappedBy = "person")
+    private Employee employee;
+
+    @OneToOne(mappedBy = "person")
+    private Customer customer;
 }

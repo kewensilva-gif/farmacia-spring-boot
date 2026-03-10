@@ -9,12 +9,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/employees")
 @CrossOrigin(origins = "*")
 public class EmployeeController {
-
     @Autowired
     private EmployeeService employeeService;
 
@@ -31,26 +31,35 @@ public class EmployeeController {
     }
 
     @PostMapping
-    public ResponseEntity<Employee> create(@RequestBody Employee employee) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(employeeService.save(employee));
+    public ResponseEntity<?> create(@RequestBody Employee employee) {
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED).body(employeeService.save(employee));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Employee> update(@PathVariable Long id, @RequestBody Employee employee) {
+    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody Employee employee) {
         try {
             return ResponseEntity.ok(employeeService.update(id, employee));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        if (employeeService.existsById(id)) {
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+        try {
             employeeService.deleteById(id);
             return ResponseEntity.noContent().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", e.getMessage()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.notFound().build();
     }
 
     @GetMapping("/search/after")
