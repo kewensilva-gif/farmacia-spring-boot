@@ -1,7 +1,9 @@
 package com.kewen.GerenciamentoFarmacia.services;
 
+import com.kewen.GerenciamentoFarmacia.dto.CustomerDto;
 import com.kewen.GerenciamentoFarmacia.entities.Customer;
 import com.kewen.GerenciamentoFarmacia.entities.Person;
+import com.kewen.GerenciamentoFarmacia.mappers.CustomerMapper;
 import com.kewen.GerenciamentoFarmacia.repositories.CustomerRepository;
 import com.kewen.GerenciamentoFarmacia.repositories.SaleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +24,9 @@ public class CustomerService {
     @Autowired
     private SaleRepository saleRepository;
 
+    @Autowired
+    private CustomerMapper customerMapper;
+
     public Customer save(Customer customer) {
         validateForSave(customer);
         return customerRepository.save(customer);
@@ -31,16 +36,16 @@ public class CustomerService {
         return customerRepository.findById(id);
     }
 
-    public List<Customer> findAll() {
-        return customerRepository.findAll();
+    public List<CustomerDto> findAll() {
+        return customerMapper.toCustomerDtoList(customerRepository.findAll());
     }
 
-    public List<Customer> findByRegistrationAfter(LocalDate date) {
-        return customerRepository.findByRegistrationDateAfter(date);
+    public List<CustomerDto> findByRegistrationAfter(LocalDate date) {
+        return customerMapper.toCustomerDtoList(customerRepository.findByRegistrationDateAfter(date));
     }
 
-    public List<Customer> findByRegistrationBefore(LocalDate date) {
-        return customerRepository.findByRegistrationDateBefore(date);
+    public List<CustomerDto> findByRegistrationBefore(LocalDate date) {
+        return customerMapper.toCustomerDtoList(customerRepository.findByRegistrationDateBefore(date));
     }
 
     public Customer update(Long id, Customer customerDetails) {

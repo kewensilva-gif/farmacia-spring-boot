@@ -1,5 +1,6 @@
 package com.kewen.GerenciamentoFarmacia.controllers;
 
+import com.kewen.GerenciamentoFarmacia.dto.UserDto;
 import com.kewen.GerenciamentoFarmacia.entities.User;
 import com.kewen.GerenciamentoFarmacia.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,12 +21,12 @@ public class UserController {
     private UserService userService;
 
     @GetMapping
-    public ResponseEntity<List<User>> findAll() {
+    public ResponseEntity<List<UserDto>> findAll() {
         return ResponseEntity.ok(userService.findAll());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<User> findById(@PathVariable UUID id) {
+    public ResponseEntity<UserDto> findById(@PathVariable UUID id) {
         return userService.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -61,26 +62,26 @@ public class UserController {
     }
 
     @GetMapping("/search/username")
-    public ResponseEntity<User> findByUsername(@RequestParam String username) {
+    public ResponseEntity<UserDto> findByUsername(@RequestParam String username) {
         return userService.findByUsername(username)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/search/email")
-    public ResponseEntity<User> findByEmail(@RequestParam String email) {
+    public ResponseEntity<UserDto> findByEmail(@RequestParam String email) {
         return userService.findByEmail(email)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/enabled")
-    public ResponseEntity<List<User>> findEnabled() {
+    public ResponseEntity<List<UserDto>> findEnabled() {
         return ResponseEntity.ok(userService.findEnabled());
     }
 
     @GetMapping("/disabled")
-    public ResponseEntity<List<User>> findDisabled() {
+    public ResponseEntity<List<UserDto>> findDisabled() {
         return ResponseEntity.ok(userService.findDisabled());
     }
 

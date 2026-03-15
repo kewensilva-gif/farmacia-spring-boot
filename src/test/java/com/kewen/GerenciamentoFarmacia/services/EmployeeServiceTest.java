@@ -1,7 +1,9 @@
 package com.kewen.GerenciamentoFarmacia.services;
 
+import com.kewen.GerenciamentoFarmacia.dto.EmployeeDto;
 import com.kewen.GerenciamentoFarmacia.entities.Employee;
 import com.kewen.GerenciamentoFarmacia.entities.Person;
+import com.kewen.GerenciamentoFarmacia.mappers.EmployeeMapper;
 import com.kewen.GerenciamentoFarmacia.repositories.EmployeeRepository;
 import com.kewen.GerenciamentoFarmacia.repositories.SaleRepository;
 
@@ -26,20 +28,15 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class EmployeeServiceTest {
 
-    @Mock
-    private EmployeeRepository employeeRepository;
-
-    @Mock
-    private PersonService personService;
-
-    @Mock
-    private SaleRepository saleRepository;
-
-    @InjectMocks
-    private EmployeeService employeeService;
+    @Mock private EmployeeRepository employeeRepository;
+    @Mock private PersonService personService;
+    @Mock private SaleRepository saleRepository;
+    @Mock private EmployeeMapper employeeMapper;
+    @InjectMocks private EmployeeService employeeService;
 
     private Employee employee;
     private Person person;
+    private EmployeeDto employeeDto;
 
     @BeforeEach
     void setUp() {
@@ -57,6 +54,15 @@ class EmployeeServiceTest {
         employee.setTerminationDate(null);
         employee.setSalary(new BigDecimal("3000.00"));
         employee.setPerson(person);
+
+        employeeDto = new EmployeeDto(
+            "Maria", "Santos", "98765432100",
+            LocalDate.of(2023, 3, 1),
+            Optional.empty(),
+            null,
+            new BigDecimal("3000.00"),
+            "ROLE_EMPLOYEE"
+        );
     }
 
     // ======================== SAVE ========================
@@ -162,53 +168,58 @@ class EmployeeServiceTest {
     }
 
     @Test
-    @DisplayName("findAll - deve retornar lista de funcionários")
+    @DisplayName("findAll - deve retornar lista de DTOs de funcionários")
     void findAll_deveRetornarListaDeFuncionarios() {
         when(employeeRepository.findAll()).thenReturn(List.of(employee));
+        when(employeeMapper.toEmployeeDtoList(List.of(employee))).thenReturn(List.of(employeeDto));
 
-        List<Employee> result = employeeService.findAll();
+        List<EmployeeDto> result = employeeService.findAll();
 
         assertThat(result).hasSize(1);
     }
 
     @Test
-    @DisplayName("findActiveEmployees - deve retornar funcionários ativos")
+    @DisplayName("findActiveEmployees - deve retornar DTOs de funcionários ativos")
     void findActiveEmployees_deveRetornarFuncionariosAtivos() {
         when(employeeRepository.findByTerminationDateIsNull()).thenReturn(List.of(employee));
+        when(employeeMapper.toEmployeeDtoList(List.of(employee))).thenReturn(List.of(employeeDto));
 
-        List<Employee> result = employeeService.findActiveEmployees();
+        List<EmployeeDto> result = employeeService.findActiveEmployees();
 
         assertThat(result).hasSize(1);
     }
 
     @Test
-    @DisplayName("findInactiveEmployees - deve retornar funcionários inativos")
+    @DisplayName("findInactiveEmployees - deve retornar lista vazia de DTOs")
     void findInactiveEmployees_deveRetornarFuncionariosInativos() {
         when(employeeRepository.findByTerminationDateIsNotNull()).thenReturn(List.of());
+        when(employeeMapper.toEmployeeDtoList(List.of())).thenReturn(List.of());
 
-        List<Employee> result = employeeService.findInactiveEmployees();
+        List<EmployeeDto> result = employeeService.findInactiveEmployees();
 
         assertThat(result).isEmpty();
     }
 
     @Test
-    @DisplayName("findByHiringAfter - deve retornar funcionários contratados após data")
+    @DisplayName("findByHiringAfter - deve retornar DTOs de funcionários contratados após data")
     void findByHiringAfter_deveRetornarFuncionarios() {
         LocalDate date = LocalDate.of(2023, 1, 1);
         when(employeeRepository.findByHiringDateAfter(date)).thenReturn(List.of(employee));
+        when(employeeMapper.toEmployeeDtoList(List.of(employee))).thenReturn(List.of(employeeDto));
 
-        List<Employee> result = employeeService.findByHiringAfter(date);
+        List<EmployeeDto> result = employeeService.findByHiringAfter(date);
 
         assertThat(result).hasSize(1);
     }
 
     @Test
-    @DisplayName("findByHiringBefore - deve retornar funcionários contratados antes da data")
+    @DisplayName("findByHiringBefore - deve retornar DTOs de funcionários contratados antes da data")
     void findByHiringBefore_deveRetornarFuncionarios() {
         LocalDate date = LocalDate.of(2024, 1, 1);
         when(employeeRepository.findByHiringDateBefore(date)).thenReturn(List.of(employee));
+        when(employeeMapper.toEmployeeDtoList(List.of(employee))).thenReturn(List.of(employeeDto));
 
-        List<Employee> result = employeeService.findByHiringBefore(date);
+        List<EmployeeDto> result = employeeService.findByHiringBefore(date);
 
         assertThat(result).hasSize(1);
     }

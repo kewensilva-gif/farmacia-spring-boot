@@ -1,5 +1,6 @@
 package com.kewen.GerenciamentoFarmacia.controllers;
 
+import com.kewen.GerenciamentoFarmacia.dto.CustomerDto;
 import com.kewen.GerenciamentoFarmacia.entities.Customer;
 import com.kewen.GerenciamentoFarmacia.services.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +21,7 @@ public class CustomerController {
     private CustomerService customerService;
 
     @GetMapping
-    public ResponseEntity<List<Customer>> findAll() {
+    public ResponseEntity<List<CustomerDto>> findAll() {
         return ResponseEntity.ok(customerService.findAll());
     }
 
@@ -62,12 +63,12 @@ public class CustomerController {
     }
 
     @GetMapping("/search/after")
-    public ResponseEntity<List<Customer>> findByRegistrationAfter(@RequestParam LocalDate date) {
+    public ResponseEntity<List<CustomerDto>> findByRegistrationAfter(@RequestParam LocalDate date) {
         return ResponseEntity.ok(customerService.findByRegistrationAfter(date));
     }
 
     @GetMapping("/search/before")
-    public ResponseEntity<List<Customer>> findByRegistrationBefore(@RequestParam LocalDate date) {
+    public ResponseEntity<List<CustomerDto>> findByRegistrationBefore(@RequestParam LocalDate date) {
         return ResponseEntity.ok(customerService.findByRegistrationBefore(date));
     }
 }

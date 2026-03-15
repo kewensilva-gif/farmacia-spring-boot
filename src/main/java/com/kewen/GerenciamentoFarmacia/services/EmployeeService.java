@@ -1,7 +1,9 @@
 package com.kewen.GerenciamentoFarmacia.services;
 
+import com.kewen.GerenciamentoFarmacia.dto.EmployeeDto;
 import com.kewen.GerenciamentoFarmacia.entities.Employee;
 import com.kewen.GerenciamentoFarmacia.entities.Person;
+import com.kewen.GerenciamentoFarmacia.mappers.EmployeeMapper;
 import com.kewen.GerenciamentoFarmacia.repositories.EmployeeRepository;
 import com.kewen.GerenciamentoFarmacia.repositories.SaleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +26,9 @@ public class EmployeeService {
     @Autowired
     private SaleRepository saleRepository;
 
+    @Autowired
+    private EmployeeMapper employeeMapper;
+
     public Employee save(Employee employee) {
         validateForSave(employee);
         return employeeRepository.save(employee);
@@ -33,24 +38,24 @@ public class EmployeeService {
         return employeeRepository.findById(id);
     }
 
-    public List<Employee> findAll() {
-        return employeeRepository.findAll();
+    public List<EmployeeDto> findAll() {
+        return employeeMapper.toEmployeeDtoList(employeeRepository.findAll());
     }
 
-    public List<Employee> findByHiringAfter(LocalDate date) {
-        return employeeRepository.findByHiringDateAfter(date);
+    public List<EmployeeDto> findByHiringAfter(LocalDate date) {
+        return employeeMapper.toEmployeeDtoList(employeeRepository.findByHiringDateAfter(date));
     }
 
-    public List<Employee> findByHiringBefore(LocalDate date) {
-        return employeeRepository.findByHiringDateBefore(date);
+    public List<EmployeeDto> findByHiringBefore(LocalDate date) {
+        return employeeMapper.toEmployeeDtoList(employeeRepository.findByHiringDateBefore(date));
     }
 
-    public List<Employee> findActiveEmployees() {
-        return employeeRepository.findByTerminationDateIsNull();
+    public List<EmployeeDto> findActiveEmployees() {
+        return employeeMapper.toEmployeeDtoList(employeeRepository.findByTerminationDateIsNull());
     }
 
-    public List<Employee> findInactiveEmployees() {
-        return employeeRepository.findByTerminationDateIsNotNull();
+    public List<EmployeeDto> findInactiveEmployees() {
+        return employeeMapper.toEmployeeDtoList(employeeRepository.findByTerminationDateIsNotNull());
     }
 
     public Employee update(Long id, Employee employeeDetails) {

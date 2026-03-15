@@ -1,5 +1,6 @@
 package com.kewen.GerenciamentoFarmacia.controllers;
 
+import com.kewen.GerenciamentoFarmacia.dto.EmployeeDto;
 import com.kewen.GerenciamentoFarmacia.entities.Employee;
 import com.kewen.GerenciamentoFarmacia.services.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +20,7 @@ public class EmployeeController {
     private EmployeeService employeeService;
 
     @GetMapping
-    public ResponseEntity<List<Employee>> findAll() {
+    public ResponseEntity<List<EmployeeDto>> findAll() {
         return ResponseEntity.ok(employeeService.findAll());
     }
 
@@ -63,22 +64,22 @@ public class EmployeeController {
     }
 
     @GetMapping("/search/after")
-    public ResponseEntity<List<Employee>> findByHiringAfter(@RequestParam LocalDate date) {
+    public ResponseEntity<List<EmployeeDto>> findByHiringAfter(@RequestParam LocalDate date) {
         return ResponseEntity.ok(employeeService.findByHiringAfter(date));
     }
 
     @GetMapping("/search/before")
-    public ResponseEntity<List<Employee>> findByHiringBefore(@RequestParam LocalDate date) {
+    public ResponseEntity<List<EmployeeDto>> findByHiringBefore(@RequestParam LocalDate date) {
         return ResponseEntity.ok(employeeService.findByHiringBefore(date));
     }
 
     @GetMapping("/active")
-    public ResponseEntity<List<Employee>> findActiveEmployees() {
+    public ResponseEntity<List<EmployeeDto>> findActiveEmployees() {
         return ResponseEntity.ok(employeeService.findActiveEmployees());
     }
 
     @GetMapping("/inactive")
-    public ResponseEntity<List<Employee>> findInactiveEmployees() {
+    public ResponseEntity<List<EmployeeDto>> findInactiveEmployees() {
         return ResponseEntity.ok(employeeService.findInactiveEmployees());
     }
 }

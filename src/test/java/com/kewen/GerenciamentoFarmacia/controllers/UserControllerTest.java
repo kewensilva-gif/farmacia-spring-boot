@@ -1,6 +1,7 @@
 package com.kewen.GerenciamentoFarmacia.controllers;
 
 import tools.jackson.databind.ObjectMapper;
+import com.kewen.GerenciamentoFarmacia.dto.UserDto;
 import com.kewen.GerenciamentoFarmacia.entities.Role;
 import com.kewen.GerenciamentoFarmacia.entities.User;
 import com.kewen.GerenciamentoFarmacia.security.JwtService;
@@ -49,6 +50,7 @@ class UserControllerTest {
 
     private User user;
     private UUID userId;
+    private UserDto userDto;
 
     @BeforeEach
     void setUp() {
@@ -65,6 +67,8 @@ class UserControllerTest {
         user.setPassword("encodedPassword");
         user.setEnabled(true);
         user.setRole(role);
+
+        userDto = new UserDto("admin", "admin@farmacia.com", true, "ADMIN");
     }
 
     // ======================== GET ========================
@@ -72,7 +76,7 @@ class UserControllerTest {
     @Test
     @DisplayName("GET /api/users - deve retornar lista de usuários")
     void findAll_deveRetornarLista() throws Exception {
-        when(userService.findAll()).thenReturn(List.of(user));
+        when(userService.findAll()).thenReturn(List.of(userDto));
 
         mockMvc.perform(get("/api/users").with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk())
@@ -83,7 +87,7 @@ class UserControllerTest {
     @Test
     @DisplayName("GET /api/users/{id} - deve retornar usuário por id")
     void findById_deveRetornarUsuario() throws Exception {
-        when(userService.findById(userId)).thenReturn(Optional.of(user));
+        when(userService.findById(userId)).thenReturn(Optional.of(userDto));
 
         mockMvc.perform(get("/api/users/" + userId).with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk())
@@ -103,7 +107,7 @@ class UserControllerTest {
     @Test
     @DisplayName("GET /api/users/search/username - deve buscar por username")
     void findByUsername_deveBuscar() throws Exception {
-        when(userService.findByUsername("admin")).thenReturn(Optional.of(user));
+        when(userService.findByUsername("admin")).thenReturn(Optional.of(userDto));
 
         mockMvc.perform(get("/api/users/search/username").with(user("admin").roles("ADMIN")).param("username", "admin"))
                 .andExpect(status().isOk())
@@ -122,7 +126,7 @@ class UserControllerTest {
     @Test
     @DisplayName("GET /api/users/search/email - deve buscar por email")
     void findByEmail_deveBuscar() throws Exception {
-        when(userService.findByEmail("admin@farmacia.com")).thenReturn(Optional.of(user));
+        when(userService.findByEmail("admin@farmacia.com")).thenReturn(Optional.of(userDto));
 
         mockMvc.perform(get("/api/users/search/email").with(user("admin").roles("ADMIN")).param("email", "admin@farmacia.com"))
                 .andExpect(status().isOk())
@@ -132,7 +136,7 @@ class UserControllerTest {
     @Test
     @DisplayName("GET /api/users/enabled - deve retornar usuários habilitados")
     void findEnabled_deveRetornarHabilitados() throws Exception {
-        when(userService.findEnabled()).thenReturn(List.of(user));
+        when(userService.findEnabled()).thenReturn(List.of(userDto));
 
         mockMvc.perform(get("/api/users/enabled").with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk())

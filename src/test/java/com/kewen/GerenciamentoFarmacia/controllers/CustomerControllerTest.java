@@ -1,6 +1,7 @@
 package com.kewen.GerenciamentoFarmacia.controllers;
 
 import tools.jackson.databind.ObjectMapper;
+import com.kewen.GerenciamentoFarmacia.dto.CustomerDto;
 import com.kewen.GerenciamentoFarmacia.entities.Customer;
 import com.kewen.GerenciamentoFarmacia.entities.Person;
 import com.kewen.GerenciamentoFarmacia.security.JwtService;
@@ -48,6 +49,7 @@ class CustomerControllerTest {
     private CustomUserDetailsService customUserDetailsService;
 
     private Customer customer;
+    private CustomerDto customerDto;
 
     @BeforeEach
     void setUp() {
@@ -61,6 +63,12 @@ class CustomerControllerTest {
         customer.setId(1L);
         customer.setRegistrationDate(LocalDate.of(2024, 1, 15));
         customer.setPerson(person);
+
+        customerDto = new CustomerDto(
+            "João", "Silva", "12345678901",
+            LocalDate.of(2024, 1, 15),
+            "ROLE_CUSTOMER"
+        );
     }
 
     // ======================== GET ========================
@@ -68,7 +76,7 @@ class CustomerControllerTest {
     @Test
     @DisplayName("GET /api/customers - deve retornar lista de clientes (ADMIN)")
     void findAll_deveRetornarListaComoAdmin() throws Exception {
-        when(customerService.findAll()).thenReturn(List.of(customer));
+        when(customerService.findAll()).thenReturn(List.of(customerDto));
 
         mockMvc.perform(get("/api/customers").with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk())
@@ -78,7 +86,7 @@ class CustomerControllerTest {
     @Test
     @DisplayName("GET /api/customers - deve retornar lista de clientes (EMPLOYEE)")
     void findAll_deveRetornarListaComoEmployee() throws Exception {
-        when(customerService.findAll()).thenReturn(List.of(customer));
+        when(customerService.findAll()).thenReturn(List.of(customerDto));
 
         mockMvc.perform(get("/api/customers").with(user("employee").roles("EMPLOYEE")))
                 .andExpect(status().isOk())
@@ -88,7 +96,7 @@ class CustomerControllerTest {
     @Test
     @DisplayName("GET /api/customers - deve retornar lista de clientes (CUSTOMER)")
     void findAll_deveRetornarListaComoCustomer() throws Exception {
-        when(customerService.findAll()).thenReturn(List.of(customer));
+        when(customerService.findAll()).thenReturn(List.of(customerDto));
 
         mockMvc.perform(get("/api/customers").with(user("customer").roles("CUSTOMER")))
                 .andExpect(status().isOk())
@@ -117,7 +125,7 @@ class CustomerControllerTest {
     @Test
     @DisplayName("GET /api/customers/search/after - deve buscar por data de registro após")
     void findByRegistrationAfter_deveBuscar() throws Exception {
-        when(customerService.findByRegistrationAfter(LocalDate.of(2024, 1, 1))).thenReturn(List.of(customer));
+        when(customerService.findByRegistrationAfter(LocalDate.of(2024, 1, 1))).thenReturn(List.of(customerDto));
 
         mockMvc.perform(get("/api/customers/search/after").with(user("admin").roles("ADMIN")).param("date", "2024-01-01"))
                 .andExpect(status().isOk())
@@ -126,8 +134,8 @@ class CustomerControllerTest {
 
     @Test
     @DisplayName("GET /api/customers/search/before - deve buscar por data de registro antes")
-    void findByRegistrationBefore_deveBuscar() throws Exception {
-        when(customerService.findByRegistrationBefore(LocalDate.of(2025, 1, 1))).thenReturn(List.of(customer));
+    void findByRegistrationBefore_deveBuscar1() throws Exception {
+        when(customerService.findByRegistrationBefore(LocalDate.of(2025, 1, 1))).thenReturn(List.of(customerDto));
 
         mockMvc.perform(get("/api/customers/search/before").with(user("admin").roles("ADMIN")).param("date", "2025-01-01"))
                 .andExpect(status().isOk())

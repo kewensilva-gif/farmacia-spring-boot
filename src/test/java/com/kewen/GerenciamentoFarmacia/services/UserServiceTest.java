@@ -1,7 +1,9 @@
 package com.kewen.GerenciamentoFarmacia.services;
 
+import com.kewen.GerenciamentoFarmacia.dto.UserDto;
 import com.kewen.GerenciamentoFarmacia.entities.Role;
 import com.kewen.GerenciamentoFarmacia.entities.User;
+import com.kewen.GerenciamentoFarmacia.mappers.UserMapper;
 import com.kewen.GerenciamentoFarmacia.repositories.UserRepository;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -33,12 +35,16 @@ class UserServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private UserMapper userMapper;
+
     @InjectMocks
     private UserService userService;
 
     private User user;
     private Role role;
     private UUID userId;
+    private UserDto userDto;
 
     @BeforeEach
     void setUp() {
@@ -55,6 +61,8 @@ class UserServiceTest {
         user.setPassword("password123");
         user.setEnabled(true);
         user.setRole(role);
+
+        userDto = new UserDto("admin", "admin@farmacia.com", true, "ADMIN");
     }
 
     // ======================== SAVE ========================
@@ -86,14 +94,15 @@ class UserServiceTest {
     // ======================== FIND ========================
 
     @Test
-    @DisplayName("findById - deve retornar usuário quando encontrado")
+    @DisplayName("findById - deve retornar UserDto quando encontrado")
     void findById_deveRetornarUsuario() {
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userMapper.toUserDto(user)).thenReturn(userDto);
 
-        Optional<User> result = userService.findById(userId);
+        Optional<UserDto> result = userService.findById(userId);
 
         assertThat(result).isPresent();
-        assertThat(result.get().getUsername()).isEqualTo("admin");
+        assertThat(result.get().username()).isEqualTo("admin");
     }
 
     @Test
@@ -102,57 +111,59 @@ class UserServiceTest {
         UUID randomId = UUID.randomUUID();
         when(userRepository.findById(randomId)).thenReturn(Optional.empty());
 
-        Optional<User> result = userService.findById(randomId);
+        Optional<UserDto> result = userService.findById(randomId);
 
         assertThat(result).isEmpty();
     }
 
     @Test
-    @DisplayName("findAll - deve retornar lista de usuários")
+    @DisplayName("findAll - deve retornar lista de UserDtos")
     void findAll_deveRetornarListaDeUsuarios() {
-        when(userRepository.findAll()).thenReturn(List.of(user));
+        when(userRepository.findAllUsers()).thenReturn(List.of(userDto));
 
-        List<User> result = userService.findAll();
+        List<UserDto> result = userService.findAll();
 
         assertThat(result).hasSize(1);
     }
 
     @Test
-    @DisplayName("findByUsername - deve retornar usuário por username")
+    @DisplayName("findByUsername - deve retornar UserDto por username")
     void findByUsername_deveRetornarUsuarioPorUsername() {
         when(userRepository.findByUsername("admin")).thenReturn(Optional.of(user));
+        when(userMapper.toUserDto(user)).thenReturn(userDto);
 
-        Optional<User> result = userService.findByUsername("admin");
+        Optional<UserDto> result = userService.findByUsername("admin");
 
         assertThat(result).isPresent();
     }
 
     @Test
-    @DisplayName("findByEmail - deve retornar usuário por email")
+    @DisplayName("findByEmail - deve retornar UserDto por email")
     void findByEmail_deveRetornarUsuarioPorEmail() {
         when(userRepository.findByEmail("admin@farmacia.com")).thenReturn(Optional.of(user));
+        when(userMapper.toUserDto(user)).thenReturn(userDto);
 
-        Optional<User> result = userService.findByEmail("admin@farmacia.com");
+        Optional<UserDto> result = userService.findByEmail("admin@farmacia.com");
 
         assertThat(result).isPresent();
     }
 
     @Test
-    @DisplayName("findEnabled - deve retornar usuários ativos")
+    @DisplayName("findEnabled - deve retornar lista de UserDtos habilitados")
     void findEnabled_deveRetornarUsuariosAtivos() {
-        when(userRepository.findByEnabledTrue()).thenReturn(List.of(user));
+        when(userRepository.findAllEnabledUsers()).thenReturn(List.of(userDto));
 
-        List<User> result = userService.findEnabled();
+        List<UserDto> result = userService.findEnabled();
 
         assertThat(result).hasSize(1);
     }
 
     @Test
-    @DisplayName("findDisabled - deve retornar usuários inativos")
+    @DisplayName("findDisabled - deve retornar lista vazia de UserDtos")
     void findDisabled_deveRetornarUsuariosInativos() {
-        when(userRepository.findByEnabledFalse()).thenReturn(List.of());
+        when(userRepository.findAllDisabledUsers()).thenReturn(List.of());
 
-        List<User> result = userService.findDisabled();
+        List<UserDto> result = userService.findDisabled();
 
         assertThat(result).isEmpty();
     }

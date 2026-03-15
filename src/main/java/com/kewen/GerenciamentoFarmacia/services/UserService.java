@@ -1,6 +1,8 @@
 package com.kewen.GerenciamentoFarmacia.services;
 
+import com.kewen.GerenciamentoFarmacia.dto.UserDto;
 import com.kewen.GerenciamentoFarmacia.entities.User;
+import com.kewen.GerenciamentoFarmacia.mappers.UserMapper;
 import com.kewen.GerenciamentoFarmacia.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -16,6 +18,8 @@ public class UserService {
     private PasswordEncoder passwordEncoder;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private UserMapper userMapper;
 
     public User save(User user) {
         try {
@@ -26,32 +30,33 @@ public class UserService {
         }
     }
 
-    public Optional<User> findById(UUID id) {
-        return userRepository.findById(id);
+    public Optional<UserDto> findById(UUID id) {
+        Optional<User> user = userRepository.findById(id);
+        return user.map(userMapper::toUserDto);
     }
 
-    public List<User> findAll() {
-        return userRepository.findAll();
+    public List<UserDto> findAll() {
+        return userRepository.findAllUsers();
     }
 
-    public Optional<User> findByUsername(String username) {
-        return userRepository.findByUsername(username);
+    public Optional<UserDto> findByUsername(String username) {
+        return userRepository.findByUsername(username).map(userMapper::toUserDto);
     }
 
-    public Optional<User> findByEmail(String email) {
-        return userRepository.findByEmail(email);
+    public Optional<UserDto> findByEmail(String email) {
+        return userRepository.findByEmail(email).map(userMapper::toUserDto);
     }
 
-    public Optional<User> findByUsernameOrEmail(String username, String email) {
-        return userRepository.findByUsernameOrEmail(username, email);
+    public Optional<UserDto> findByUsernameOrEmail(String username, String email) {
+        return userRepository.findByUsernameOrEmail(username, email).map(userMapper::toUserDto);
     }
 
-    public List<User> findEnabled() {
-        return userRepository.findByEnabledTrue();
+    public List<UserDto> findEnabled() {
+        return userRepository.findAllEnabledUsers();
     }
 
-    public List<User> findDisabled() {
-        return userRepository.findByEnabledFalse();
+    public List<UserDto> findDisabled() {
+        return userRepository.findAllDisabledUsers();
     }
 
     public User update(UUID id, User userDetails) {

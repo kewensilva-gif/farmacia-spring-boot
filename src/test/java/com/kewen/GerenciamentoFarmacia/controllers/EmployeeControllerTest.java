@@ -1,6 +1,7 @@
 package com.kewen.GerenciamentoFarmacia.controllers;
 
 import tools.jackson.databind.ObjectMapper;
+import com.kewen.GerenciamentoFarmacia.dto.EmployeeDto;
 import com.kewen.GerenciamentoFarmacia.entities.Employee;
 import com.kewen.GerenciamentoFarmacia.entities.Person;
 import com.kewen.GerenciamentoFarmacia.security.JwtService;
@@ -49,6 +50,7 @@ class EmployeeControllerTest {
     private CustomUserDetailsService customUserDetailsService;
 
     private Employee employee;
+    private EmployeeDto employeeDto;
 
     @BeforeEach
     void setUp() {
@@ -63,6 +65,15 @@ class EmployeeControllerTest {
         employee.setHiringDate(LocalDate.of(2023, 6, 1));
         employee.setSalary(new BigDecimal("3500.00"));
         employee.setPerson(person);
+
+        employeeDto = new EmployeeDto(
+            "Maria", "Santos", "98765432100",
+            LocalDate.of(2023, 6, 1),
+            Optional.empty(),
+            null,
+            new BigDecimal("3500.00"),
+            "ROLE_EMPLOYEE"
+        );
     }
 
     // ======================== GET ========================
@@ -70,7 +81,7 @@ class EmployeeControllerTest {
     @Test
     @DisplayName("GET /api/employees - deve retornar lista de funcionários")
     void findAll_deveRetornarLista() throws Exception {
-        when(employeeService.findAll()).thenReturn(List.of(employee));
+        when(employeeService.findAll()).thenReturn(List.of(employeeDto));
 
         mockMvc.perform(get("/api/employees").with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk())
@@ -100,7 +111,7 @@ class EmployeeControllerTest {
     @Test
     @DisplayName("GET /api/employees/search/after - deve buscar por data de contratação após")
     void findByHiringAfter_deveBuscar() throws Exception {
-        when(employeeService.findByHiringAfter(LocalDate.of(2023, 1, 1))).thenReturn(List.of(employee));
+        when(employeeService.findByHiringAfter(LocalDate.of(2023, 1, 1))).thenReturn(List.of(employeeDto));
 
         mockMvc.perform(get("/api/employees/search/after").with(user("admin").roles("ADMIN")).param("date", "2023-01-01"))
                 .andExpect(status().isOk())
@@ -110,7 +121,7 @@ class EmployeeControllerTest {
     @Test
     @DisplayName("GET /api/employees/search/before - deve buscar por data de contratação antes")
     void findByHiringBefore_deveBuscar() throws Exception {
-        when(employeeService.findByHiringBefore(LocalDate.of(2024, 1, 1))).thenReturn(List.of(employee));
+        when(employeeService.findByHiringBefore(LocalDate.of(2024, 1, 1))).thenReturn(List.of(employeeDto));
 
         mockMvc.perform(get("/api/employees/search/before").with(user("admin").roles("ADMIN")).param("date", "2024-01-01"))
                 .andExpect(status().isOk())
@@ -120,7 +131,7 @@ class EmployeeControllerTest {
     @Test
     @DisplayName("GET /api/employees/active - deve retornar funcionários ativos")
     void findActive_deveRetornarAtivos() throws Exception {
-        when(employeeService.findActiveEmployees()).thenReturn(List.of(employee));
+        when(employeeService.findActiveEmployees()).thenReturn(List.of(employeeDto));
 
         mockMvc.perform(get("/api/employees/active").with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk())

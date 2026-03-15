@@ -1,5 +1,6 @@
 package com.kewen.GerenciamentoFarmacia.repositories;
 
+import com.kewen.GerenciamentoFarmacia.dto.UserDto;
 import com.kewen.GerenciamentoFarmacia.entities.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -23,4 +24,37 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     
     @Query("SELECT u FROM User u WHERE u.username = :username OR u.email = :email")
     Optional<User> findByUsernameOrEmail(@Param("username") String username, @Param("email") String email);
+
+    @Query("""
+           SELECT new com.kewen.GerenciamentoFarmacia.dto.UserDto(
+                u.username,
+                u.email,
+                u.enabled,
+                u.role.name
+           )
+           FROM User u
+           """)
+    List<UserDto> findAllUsers();
+
+    @Query("""
+           SELECT new com.kewen.GerenciamentoFarmacia.dto.UserDto(
+                u.username,
+                u.email,
+                u.enabled,
+                u.role.name
+           )
+           FROM User u WHERE u.enabled = true
+           """)
+    List<UserDto> findAllEnabledUsers();
+
+    @Query("""
+           SELECT new com.kewen.GerenciamentoFarmacia.dto.UserDto(
+                u.username,
+                u.email,
+                u.enabled,
+                u.role.name
+           )
+           FROM User u WHERE u.enabled = false
+           """)
+    List<UserDto> findAllDisabledUsers();
 }

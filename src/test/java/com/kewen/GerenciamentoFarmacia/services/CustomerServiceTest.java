@@ -1,7 +1,9 @@
 package com.kewen.GerenciamentoFarmacia.services;
 
+import com.kewen.GerenciamentoFarmacia.dto.CustomerDto;
 import com.kewen.GerenciamentoFarmacia.entities.Customer;
 import com.kewen.GerenciamentoFarmacia.entities.Person;
+import com.kewen.GerenciamentoFarmacia.mappers.CustomerMapper;
 import com.kewen.GerenciamentoFarmacia.repositories.CustomerRepository;
 import com.kewen.GerenciamentoFarmacia.repositories.SaleRepository;
 
@@ -25,20 +27,15 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class CustomerServiceTest {
 
-    @Mock
-    private CustomerRepository customerRepository;
-
-    @Mock
-    private PersonService personService;
-
-    @Mock
-    private SaleRepository saleRepository;
-
-    @InjectMocks
-    private CustomerService customerService;
+    @Mock private CustomerRepository customerRepository;
+    @Mock private PersonService personService;
+    @Mock private SaleRepository saleRepository;
+    @Mock private CustomerMapper customerMapper;
+    @InjectMocks private CustomerService customerService;
 
     private Customer customer;
     private Person person;
+    private CustomerDto customerDto;
 
     @BeforeEach
     void setUp() {
@@ -54,6 +51,12 @@ class CustomerServiceTest {
         customer.setId(1L);
         customer.setRegistrationDate(LocalDate.of(2024, 1, 15));
         customer.setPerson(person);
+
+        customerDto = new CustomerDto(
+            "João", "Silva", "12345678901",
+            LocalDate.of(2024, 1, 15),
+            "ROLE_CUSTOMER"
+        );
     }
 
     // ======================== SAVE ========================
@@ -148,33 +151,36 @@ class CustomerServiceTest {
     }
 
     @Test
-    @DisplayName("findAll - deve retornar lista de clientes")
+    @DisplayName("findAll - deve retornar lista de DTOs de clientes")
     void findAll_deveRetornarListaDeClientes() {
         when(customerRepository.findAll()).thenReturn(List.of(customer));
+        when(customerMapper.toCustomerDtoList(List.of(customer))).thenReturn(List.of(customerDto));
 
-        List<Customer> result = customerService.findAll();
+        List<CustomerDto> result = customerService.findAll();
 
         assertThat(result).hasSize(1);
     }
 
     @Test
-    @DisplayName("findByRegistrationAfter - deve retornar clientes cadastrados após a data")
+    @DisplayName("findByRegistrationAfter - deve retornar DTOs de clientes cadastrados após a data")
     void findByRegistrationAfter_deveRetornarClientes() {
         LocalDate date = LocalDate.of(2024, 1, 1);
         when(customerRepository.findByRegistrationDateAfter(date)).thenReturn(List.of(customer));
+        when(customerMapper.toCustomerDtoList(List.of(customer))).thenReturn(List.of(customerDto));
 
-        List<Customer> result = customerService.findByRegistrationAfter(date);
+        List<CustomerDto> result = customerService.findByRegistrationAfter(date);
 
         assertThat(result).hasSize(1);
     }
 
     @Test
-    @DisplayName("findByRegistrationBefore - deve retornar clientes cadastrados antes da data")
+    @DisplayName("findByRegistrationBefore - deve retornar DTOs de clientes cadastrados antes da data")
     void findByRegistrationBefore_deveRetornarClientes() {
         LocalDate date = LocalDate.of(2025, 1, 1);
         when(customerRepository.findByRegistrationDateBefore(date)).thenReturn(List.of(customer));
+        when(customerMapper.toCustomerDtoList(List.of(customer))).thenReturn(List.of(customerDto));
 
-        List<Customer> result = customerService.findByRegistrationBefore(date);
+        List<CustomerDto> result = customerService.findByRegistrationBefore(date);
 
         assertThat(result).hasSize(1);
     }
