@@ -1,10 +1,22 @@
-# Gerenciamento Farmácia — API REST
+# GestFarma — Gerenciamento Farmácia — Fullstack
 
-API REST para gerenciamento de farmácia desenvolvida com **Spring Boot 4**. Oferece controle completo de produtos, categorias, clientes, funcionários, vendas e autenticação baseada em JWT, com soft delete, gestão de estoque, validação de regras de negócio e cobertura de testes automatizados.
+Sistema fullstack de gerenciamento de farmácia organizado como **monorepo**, com uma API REST em Spring Boot e uma SPA em React. Oferece controle completo de produtos, categorias, clientes, funcionários, vendas e autenticação JWT, com páginas personalizadas por papel de acesso.
+
+---
+
+## Estrutura do Repositório
+
+```
+farmacia-springboot/
+├── backend/    ← API REST (Spring Boot 4 + Java 21 + PostgreSQL)
+└── frontend/   ← SPA (React 19 + TypeScript + Tailwind CSS + MUI)
+```
 
 ---
 
 ## Tecnologias
+
+### Backend
 
 | Tecnologia | Versão |
 |---|---|
@@ -15,43 +27,71 @@ API REST para gerenciamento de farmácia desenvolvida com **Spring Boot 4**. Ofe
 | PostgreSQL | — |
 | Flyway | — |
 | JWT (jjwt) | 0.12.7 |
+| MapStruct | — |
 | Springdoc OpenAPI | 2.8.14 |
 | Lombok | — |
 | Maven | — |
 
+### Frontend
+
+| Tecnologia | Versão |
+|---|---|
+| React | 19 |
+| TypeScript | 5 |
+| Vite | 6 |
+| Tailwind CSS | 3 |
+| MUI (Material UI) | 7 |
+| React Router | 7 |
+| Axios | — |
+| React Hook Form | — |
+| Zod | — |
+
 ---
 
-## Funcionalidades Principais
+## Funcionalidades
 
-- **Soft Delete** — Produtos, vendas e categorias usam exclusão lógica (campo `enabled`). Todas as consultas filtram automaticamente por registros ativos.
-- **Gestão de Estoque** — Débito automático no momento da venda; restauração ao cancelar venda ou remover item. Impede venda com estoque insuficiente.
-- **Controle de Validade** — Bloqueia venda de produtos vencidos; endpoint dedicado para listar produtos expirados.
-- **Alerta de Estoque Baixo** — Endpoint com limite configurável para consultar produtos com estoque abaixo do threshold.
-- **Cálculo Automático de Totais** — Total da venda calculado a partir de (itens × preço unitário) − desconto.
-- **Snapshot de Preço** — Itens de venda capturam o preço unitário do produto no momento da venda.
-- **Validações em Cascata** — Categoria não pode ser desativada se possuir produtos ativos; funcionário demitido não pode registrar vendas; pessoa não pode ser removida se possuir cliente/funcionário vinculado.
-- **Autenticação JWT** — Assinatura HMAC-SHA com expiração configurável; login por username ou email.
-- **Controle de Acesso por Papel** — 3 papéis: ADMIN (acesso total), EMPLOYEE (vendas e clientes), CUSTOMER (somente leitura).
-- **Registro Administrativo** — Endpoint transacional que cria usuário + pessoa + funcionário/cliente em uma única operação.
+### Backend
+
+- **Soft Delete** — Produtos, vendas e categorias usam exclusão lógica (campo `enabled`).
+- **Gestão de Estoque** — Débito automático na venda; restauração ao cancelar.
+- **Controle de Validade** — Bloqueia venda de produtos vencidos; endpoint dedicado para listar expirados.
+- **Alerta de Estoque Baixo** — Endpoint com limite configurável.
+- **Cálculo Automático de Totais** — Total calculado a partir de (itens × preço unitário) − desconto.
+- **Snapshot de Preço** — Itens de venda capturam o preço unitário no momento da venda.
+- **Validações em Cascata** — Categoria não pode ser desativada se possuir produtos ativos; funcionário demitido não pode registrar vendas.
+- **Autenticação JWT** — HMAC-SHA com expiração configurável; login por username ou email.
+- **Controle de Acesso por Papel** — 3 papéis: ADMIN, EMPLOYEE, CUSTOMER.
+- **Registro Administrativo** — Endpoint transacional que cria usuário + pessoa + funcionário/cliente em uma operação.
 - **Documentação Interativa** — Swagger UI em `/swagger-ui.html`.
-- **Bean Validation** — `@Valid` nos DTOs de autenticação e registro administrativo.
-- **Busca Avançada** — Filtros por código de barras, nome (ILIKE), CPF, faixas de data, método de pagamento, faixas de preço, username e email.
+
+### Frontend
+
+- **Autenticação completa** — Login, registro público (CUSTOMER) e logout com token JWT armazenado em `localStorage`. Interceptor Axios injeta o Bearer token automaticamente em todas as requisições, com redirecionamento para `/login` em caso de 401.
+- **Páginas por papel** — Dashboard, sidebar e permissões de UI adaptadas ao papel do usuário autenticado.
+- **Proteção de rotas** — `ProtectedRoute` bloqueia acesso não autorizado e exibe página 403 para roles insuficientes.
+- **CRUD completo** — Todas as entidades possuem tabela com busca/filtros, formulário em dialog, confirmação de exclusão e feedback via Snackbar.
+- **Skeleton de carregamento** — Linhas de tabela com `MUI Skeleton` durante requisições.
+- **Validação de formulários** — React Hook Form + Zod com erros inline em todos os campos.
 
 ---
 
 ## Pré-requisitos
 
-- Java 21+
-- Maven 3.9+
-- PostgreSQL em execução
+| Ferramenta | Versão mínima |
+|---|---|
+| Java | 21 |
+| Maven | 3.9 |
+| PostgreSQL | — (em execução) |
+| Node.js | 18 |
+| npm | 9 |
 
 ---
 
 ## Configuração
 
-### Variáveis de Ambiente
+### Backend — Variáveis de Ambiente
 
-Crie um arquivo `.env` na raiz do projeto com as seguintes variáveis:
+Crie `backend/.env` com base em `backend/.env.example`:
 
 ```env
 DB_HOST=localhost
@@ -64,50 +104,77 @@ JWT_SECRET=sua_chave_secreta_base64
 JWT_EXPIRATION_MS=86400000
 ```
 
-> O projeto usa [spring-dotenv](https://github.com/paulschwarz/spring-dotenv) para carregar o `.env` automaticamente.
+> O projeto usa [spring-dotenv](https://github.com/paulschwarz/spring-dotenv) para carregar `.env` automaticamente.
 
-### Banco de Dados
+### Frontend — Variáveis de Ambiente
 
-O Flyway executa as migrations automaticamente ao iniciar a aplicação:
+Crie `frontend/.env` (já incluso no projeto):
 
-| Migration | Descrição |
-|---|---|
-| `V1__create_tables.sql` | Criação do ENUM `payment_method`, extensão `pgcrypto` e todas as tabelas (user, role, user\_role, person, category, product, customer, employee, sale, sale\_product) |
-| `V2__seed_roles.sql` | Inserção dos papéis padrão: ADMIN, EMPLOYEE, CUSTOMER |
-| `V3__refactor_user_role_to_single.sql` | Refatoração de muitos-para-muitos para papel único: adiciona `role_id` em user, remove tabela `user_role` |
-| `V4__seed_data.sql` | Dados de desenvolvimento: 7 usuários, 7 pessoas, 3 funcionários, 4 clientes, 8 categorias, 16 produtos, 5 vendas e 12 itens de venda |
-| `V5__add_enabled_column_soft_delete.sql` | Adiciona coluna `enabled BOOLEAN DEFAULT TRUE` em product, sale e category para soft delete |
+```env
+VITE_API_BASE_URL=http://localhost:8080
+```
 
 ---
 
 ## Executando o Projeto
 
-```bash
-# Clonar o repositório
-git clone <url-do-repositorio>
-cd farmacia-springboot
+### Backend
 
-# Executar
+```bash
+cd backend
 ./mvnw spring-boot:run
 ```
 
 A API estará disponível em `http://localhost:8080`.
 
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+A SPA estará disponível em `http://localhost:5173`.
+
+---
+
+## Banco de Dados
+
+O Flyway executa as migrations automaticamente ao iniciar o backend:
+
+| Migration | Descrição |
+|---|---|
+| `V1__create_tables.sql` | ENUM `payment_method`, extensão `pgcrypto` e todas as tabelas |
+| `V2__seed_roles.sql` | Inserção dos papéis padrão: ADMIN, EMPLOYEE, CUSTOMER |
+| `V3__refactor_user_role_to_single.sql` | Refatoração para papel único: adiciona `role_id` em user, remove `user_role` |
+| `V4__seed_data.sql` | Dados de desenvolvimento (usuários, produtos, vendas) |
+| `V5__add_enabled_column_soft_delete.sql` | Coluna `enabled` em product, sale e category |
+
+---
+
+## Dados de Desenvolvimento
+
+A migration `V4` insere os seguintes usuários para testes:
+
+| Usuário | Senha | Papel |
+|---|---|---|
+| `admin` | `admin123` | ADMIN |
+| `joao.silva` | `func123` | EMPLOYEE |
+| `maria.santos` | `func123` | EMPLOYEE |
+| `carlos.oliveira` | `cli123` | CUSTOMER |
+| `ana.souza` | `cli123` | CUSTOMER |
+| `pedro.lima` | `cli123` | CUSTOMER |
+| `lucia.ferreira` | `cli123` | CUSTOMER |
+
 ---
 
 ## Documentação da API
 
-O Swagger UI está disponível em:
-
-```
-http://localhost:8080/swagger-ui.html
-```
-
-A especificação OpenAPI (JSON) está em:
-
-```
-http://localhost:8080/v3/api-docs
-```
+| Recurso | URL |
+|---|---|
+| Swagger UI | `http://localhost:8080/swagger-ui.html` |
+| OpenAPI JSON | `http://localhost:8080/v3/api-docs` |
 
 ---
 
@@ -132,32 +199,52 @@ Sale ── OneToMany ──► SaleProduct ── ManyToOne ──► Product
 
 ---
 
+## Controle de Acesso
+
+| Papel | Descrição |
+|---|---|
+| `ADMIN` | Acesso total ao sistema |
+| `EMPLOYEE` | Gerenciamento de vendas e clientes; leitura de produtos e categorias |
+| `CUSTOMER` | Leitura de produtos e categorias |
+
+| Recurso | GET | POST / PUT | DELETE |
+|---|---|---|---|
+| `/api/auth/**` | — | Público | — |
+| `/api/products/**`, `/api/categories/**` | Autenticado | ADMIN | ADMIN |
+| `/api/sales/**`, `/api/sale-products/**` | ADMIN, EMPLOYEE | ADMIN, EMPLOYEE | ADMIN, EMPLOYEE |
+| `/api/customers/**` | ADMIN, EMPLOYEE, CUSTOMER | ADMIN, EMPLOYEE | ADMIN |
+| `/api/users/**`, `/api/roles/**`, `/api/employees/**` | ADMIN | ADMIN | ADMIN |
+| `/api/admin/**` | ADMIN | ADMIN | ADMIN |
+| Demais endpoints | Autenticado | Autenticado | Autenticado |
+
+---
+
 ## Endpoints
 
 ### Autenticação — `/api/auth`
 
 | Método | Endpoint | Descrição | Acesso |
 |---|---|---|---|
-| POST | `/api/auth/register` | Registrar novo usuário (papel CUSTOMER por padrão), retorna JWT | Público |
+| POST | `/api/auth/register` | Registrar novo usuário (papel CUSTOMER), retorna JWT | Público |
 | POST | `/api/auth/login` | Autenticar por username ou email, retorna JWT | Público |
 
-### Registro Administrativo — `/api/admin/register`
+### Registro Administrativo — `/api/admin`
 
 | Método | Endpoint | Descrição | Acesso |
 |---|---|---|---|
-| POST | `/api/admin/register` | Registrar usuário + pessoa + funcionário/cliente em transação única | ADMIN |
+| POST | `/api/admin/register` | Criar usuário + pessoa + funcionário/cliente em transação única | ADMIN |
 
 ### Produtos — `/api/products`
 
 | Método | Endpoint | Descrição | Acesso |
 |---|---|---|---|
 | GET | `/api/products` | Listar todos os produtos ativos | Autenticado |
-| GET | `/api/products/{id}` | Buscar produto por ID | Autenticado |
+| GET | `/api/products/{id}` | Buscar por ID | Autenticado |
 | GET | `/api/products/search/barcode?barcode=` | Buscar por código de barras | Autenticado |
 | GET | `/api/products/search/name?name=` | Buscar por nome (ILIKE) | Autenticado |
 | GET | `/api/products/category/{categoryId}` | Filtrar por categoria | Autenticado |
 | GET | `/api/products/expired` | Listar produtos vencidos | Autenticado |
-| GET | `/api/products/low-stock?quantity=10` | Listar produtos com estoque baixo | Autenticado |
+| GET | `/api/products/low-stock?quantity=10` | Listar com estoque baixo | Autenticado |
 | POST | `/api/products` | Criar produto | ADMIN |
 | PUT | `/api/products/{id}` | Atualizar produto | ADMIN |
 | DELETE | `/api/products/{id}` | Desativar produto (soft delete) | ADMIN |
@@ -167,23 +254,23 @@ Sale ── OneToMany ──► SaleProduct ── ManyToOne ──► Product
 | Método | Endpoint | Descrição | Acesso |
 |---|---|---|---|
 | GET | `/api/categories` | Listar todas as categorias ativas | Autenticado |
-| GET | `/api/categories/{id}` | Buscar categoria por ID | Autenticado |
+| GET | `/api/categories/{id}` | Buscar por ID | Autenticado |
 | GET | `/api/categories/search/name?name=` | Buscar por nome | Autenticado |
 | POST | `/api/categories` | Criar categoria | ADMIN |
 | PUT | `/api/categories/{id}` | Atualizar categoria | ADMIN |
-| DELETE | `/api/categories/{id}` | Desativar categoria (bloqueado se há produtos ativos) | ADMIN |
+| DELETE | `/api/categories/{id}` | Desativar (bloqueado se há produtos ativos) | ADMIN |
 
 ### Vendas — `/api/sales`
 
 | Método | Endpoint | Descrição | Acesso |
 |---|---|---|---|
 | GET | `/api/sales` | Listar todas as vendas ativas | ADMIN, EMPLOYEE |
-| GET | `/api/sales/{id}` | Buscar venda por ID | ADMIN, EMPLOYEE |
+| GET | `/api/sales/{id}` | Buscar por ID | ADMIN, EMPLOYEE |
 | GET | `/api/sales/search/payment-method?paymentMethod=` | Filtrar por método de pagamento | ADMIN, EMPLOYEE |
 | GET | `/api/sales/search/price-greater?price=` | Vendas acima do valor | ADMIN, EMPLOYEE |
 | GET | `/api/sales/search/price-less?price=` | Vendas abaixo do valor | ADMIN, EMPLOYEE |
-| POST | `/api/sales` | Registrar venda (debita estoque automaticamente) | ADMIN, EMPLOYEE |
-| PUT | `/api/sales/{id}` | Atualizar venda (desconto, método de pagamento) | ADMIN, EMPLOYEE |
+| POST | `/api/sales` | Registrar venda (debita estoque) | ADMIN, EMPLOYEE |
+| PUT | `/api/sales/{id}` | Atualizar venda | ADMIN, EMPLOYEE |
 | DELETE | `/api/sales/{id}` | Cancelar venda (soft delete, restaura estoque) | ADMIN, EMPLOYEE |
 
 ### Itens de Venda — `/api/sale-products`
@@ -191,7 +278,7 @@ Sale ── OneToMany ──► SaleProduct ── ManyToOne ──► Product
 | Método | Endpoint | Descrição | Acesso |
 |---|---|---|---|
 | GET | `/api/sale-products` | Listar todos os itens | ADMIN, EMPLOYEE |
-| GET | `/api/sale-products/{id}` | Buscar item por ID | ADMIN, EMPLOYEE |
+| GET | `/api/sale-products/{id}` | Buscar por ID | ADMIN, EMPLOYEE |
 | GET | `/api/sale-products/search/sale/{saleId}` | Itens por venda | ADMIN, EMPLOYEE |
 | GET | `/api/sale-products/search/product/{productId}` | Itens por produto | ADMIN, EMPLOYEE |
 | DELETE | `/api/sale-products/{id}` | Remover item (restaura estoque) | ADMIN, EMPLOYEE |
@@ -201,45 +288,45 @@ Sale ── OneToMany ──► SaleProduct ── ManyToOne ──► Product
 | Método | Endpoint | Descrição | Acesso |
 |---|---|---|---|
 | GET | `/api/customers` | Listar todos os clientes | ADMIN, EMPLOYEE, CUSTOMER |
-| GET | `/api/customers/{id}` | Buscar cliente por ID | ADMIN, EMPLOYEE, CUSTOMER |
-| GET | `/api/customers/search/after?date=` | Clientes registrados após a data | ADMIN, EMPLOYEE, CUSTOMER |
-| GET | `/api/customers/search/before?date=` | Clientes registrados antes da data | ADMIN, EMPLOYEE, CUSTOMER |
+| GET | `/api/customers/{id}` | Buscar por ID | ADMIN, EMPLOYEE, CUSTOMER |
+| GET | `/api/customers/search/after?date=` | Registrados após a data | ADMIN, EMPLOYEE, CUSTOMER |
+| GET | `/api/customers/search/before?date=` | Registrados antes da data | ADMIN, EMPLOYEE, CUSTOMER |
 | POST | `/api/customers` | Criar cliente | ADMIN, EMPLOYEE |
 | PUT | `/api/customers/{id}` | Atualizar cliente | ADMIN, EMPLOYEE |
-| DELETE | `/api/customers/{id}` | Remover cliente (bloqueado se há dependências) | ADMIN |
+| DELETE | `/api/customers/{id}` | Remover cliente | ADMIN |
 
 ### Funcionários — `/api/employees`
 
 | Método | Endpoint | Descrição | Acesso |
 |---|---|---|---|
 | GET | `/api/employees` | Listar todos os funcionários | ADMIN |
-| GET | `/api/employees/{id}` | Buscar funcionário por ID | ADMIN |
-| GET | `/api/employees/search/after?date=` | Contratados após a data | ADMIN |
-| GET | `/api/employees/search/before?date=` | Contratados antes da data | ADMIN |
+| GET | `/api/employees/{id}` | Buscar por ID | ADMIN |
 | GET | `/api/employees/active` | Listar funcionários ativos | ADMIN |
 | GET | `/api/employees/inactive` | Listar funcionários inativos (demitidos) | ADMIN |
+| GET | `/api/employees/search/after?date=` | Contratados após a data | ADMIN |
+| GET | `/api/employees/search/before?date=` | Contratados antes da data | ADMIN |
 | POST | `/api/employees` | Criar funcionário | ADMIN |
 | PUT | `/api/employees/{id}` | Atualizar funcionário | ADMIN |
-| DELETE | `/api/employees/{id}` | Remover funcionário (bloqueado se há dependências) | ADMIN |
+| DELETE | `/api/employees/{id}` | Remover funcionário | ADMIN |
 
 ### Pessoas — `/api/people`
 
 | Método | Endpoint | Descrição | Acesso |
 |---|---|---|---|
 | GET | `/api/people` | Listar todas as pessoas | Autenticado |
-| GET | `/api/people/{id}` | Buscar pessoa por ID | Autenticado |
+| GET | `/api/people/{id}` | Buscar por ID | Autenticado |
 | GET | `/api/people/search/cpf?cpf=` | Buscar por CPF | Autenticado |
 | GET | `/api/people/search/exists/cpf?cpf=` | Verificar existência por CPF | Autenticado |
 | POST | `/api/people` | Criar pessoa | Autenticado |
 | PUT | `/api/people/{id}` | Atualizar pessoa | Autenticado |
-| DELETE | `/api/people/{id}` | Remover pessoa (bloqueado se há dependências) | Autenticado |
+| DELETE | `/api/people/{id}` | Remover pessoa | Autenticado |
 
 ### Usuários — `/api/users`
 
 | Método | Endpoint | Descrição | Acesso |
 |---|---|---|---|
 | GET | `/api/users` | Listar todos os usuários | ADMIN |
-| GET | `/api/users/{id}` | Buscar usuário por UUID | ADMIN |
+| GET | `/api/users/{id}` | Buscar por UUID | ADMIN |
 | GET | `/api/users/search/username?username=` | Buscar por username | ADMIN |
 | GET | `/api/users/search/email?email=` | Buscar por email | ADMIN |
 | GET | `/api/users/enabled` | Listar usuários ativos | ADMIN |
@@ -255,7 +342,7 @@ Sale ── OneToMany ──► SaleProduct ── ManyToOne ──► Product
 | Método | Endpoint | Descrição | Acesso |
 |---|---|---|---|
 | GET | `/api/roles` | Listar todos os papéis | ADMIN |
-| GET | `/api/roles/{id}` | Buscar papel por UUID | ADMIN |
+| GET | `/api/roles/{id}` | Buscar por UUID | ADMIN |
 | GET | `/api/roles/search/name?name=` | Buscar por nome | ADMIN |
 | GET | `/api/roles/search/exists/name?name=` | Verificar existência por nome | ADMIN |
 | POST | `/api/roles` | Criar papel | ADMIN |
@@ -266,26 +353,25 @@ Sale ── OneToMany ──► SaleProduct ── ManyToOne ──► Product
 
 ## Autenticação JWT
 
-Após realizar o login, inclua o token retornado no cabeçalho de todas as requisições protegidas:
+Após o login, inclua o token em todas as requisições protegidas:
 
 ```
 Authorization: Bearer <token>
 ```
 
-### Exemplo de login
+### Login
 
-**Request:**
 ```json
 POST /api/auth/login
 {
   "login": "admin",
-  "password": "senha123"
+  "password": "admin123"
 }
 ```
 
 > O campo `login` aceita tanto username quanto email.
 
-**Response:**
+**Resposta:**
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiJ9...",
@@ -294,9 +380,8 @@ POST /api/auth/login
 }
 ```
 
-### Exemplo de registro público
+### Registro público
 
-**Request:**
 ```json
 POST /api/auth/register
 {
@@ -306,9 +391,8 @@ POST /api/auth/register
 }
 ```
 
-### Exemplo de registro administrativo
+### Registro administrativo
 
-**Request (requer ADMIN):**
 ```json
 POST /api/admin/register
 {
@@ -319,7 +403,6 @@ POST /api/admin/register
   "email": "maria@farmacia.com",
   "password": "senha123",
   "roleName": "EMPLOYEE",
-  "registrationDate": null,
   "hiringDate": "2024-01-15",
   "salary": 3500.00
 }
@@ -327,64 +410,76 @@ POST /api/admin/register
 
 ---
 
-## Papéis de Acesso
-
-| Papel | Descrição |
-|---|---|
-| `ADMIN` | Acesso total ao sistema |
-| `EMPLOYEE` | Gerenciamento de vendas e clientes; leitura de produtos e categorias |
-| `CUSTOMER` | Leitura de clientes e produtos |
-
-### Regras de Segurança
-
-| Recurso | GET | POST / PUT | DELETE |
-|---|---|---|---|
-| `/api/auth/**` | — | Público | — |
-| `/api/products/**`, `/api/categories/**` | Autenticado | ADMIN | ADMIN |
-| `/api/sales/**`, `/api/sale-products/**` | ADMIN, EMPLOYEE | ADMIN, EMPLOYEE | ADMIN, EMPLOYEE |
-| `/api/customers/**` | ADMIN, EMPLOYEE, CUSTOMER | ADMIN, EMPLOYEE | ADMIN |
-| `/api/users/**`, `/api/roles/**`, `/api/employees/**` | ADMIN | ADMIN | ADMIN |
-| `/api/admin/**` | ADMIN | ADMIN | ADMIN |
-| Demais endpoints | Autenticado | Autenticado | Autenticado |
-
----
-
 ## Estrutura do Projeto
 
+### Backend
+
 ```
-src/
+backend/src/
 ├── main/
 │   ├── java/com/kewen/GerenciamentoFarmacia/
-│   │   ├── config/          # SecurityConfig, CorsConfig, Swagger
+│   │   ├── config/          # SecurityConfig, SwaggerConfig
 │   │   ├── controllers/     # 11 controladores REST
-│   │   ├── dto/             # DTOs de autenticação e registro
-│   │   │   └── auth/        # AuthRequest, AuthResponse, RegisterRequest
-│   │   ├── entities/        # Entidades JPA (User, Role, Person, etc.)
-│   │   ├── repositories/    # Repositórios Spring Data JPA
-│   │   ├── security/        # JwtService, JwtAuthenticationFilter, CustomUserDetailsService
-│   │   └── services/        # 10 services com regras de negócio
+│   │   ├── converters/      # PaymentMethodConverter
+│   │   ├── dto/             # DTOs e records (auth, customer, employee, user)
+│   │   ├── entities/        # Entidades JPA
+│   │   ├── enums/           # PaymentMethodEnum
+│   │   ├── mappers/         # MapStruct (Customer, Employee, User)
+│   │   ├── repositories/    # Spring Data JPA
+│   │   ├── security/        # JwtService, JwtAuthenticationFilter, UserDetailsService
+│   │   └── services/        # Regras de negócio
 │   └── resources/
 │       ├── application.properties
-│       └── db/migration/    # V1 a V5 — Scripts Flyway
+│       └── db/migration/    # V1 – V5 (Flyway)
 └── test/
-    └── java/com/kewen/GerenciamentoFarmacia/
-        ├── controllers/     # 11 testes de integração (MockMvc + Security)
-        └── services/        # 9 testes unitários (Mockito)
+    ├── controllers/         # 11 testes de integração (MockMvc)
+    └── services/            # 9 testes unitários (Mockito)
+```
+
+### Frontend
+
+```
+frontend/src/
+├── lib/
+│   └── axios.ts                      # Instância Axios com interceptor JWT
+├── contexts/
+│   └── AuthContext.tsx               # Estado global de autenticação
+├── router/
+│   └── index.tsx                     # Rotas protegidas por papel
+├── shared/
+│   ├── components/
+│   │   ├── Layout.tsx                # Shell com sidebar + navbar
+│   │   ├── Sidebar.tsx               # Navegação filtrada por papel
+│   │   ├── Navbar.tsx                # AppBar com usuário e papel
+│   │   └── ProtectedRoute.tsx        # Guard de autenticação e autorização
+│   └── utils/
+│       └── formatters.ts             # formatCurrency, formatDate, formatCPF...
+└── modules/                          # Um módulo por entidade de negócio
+    ├── auth/           (types · service · LoginPage · RegisterPage)
+    ├── dashboard/      (AdminDashboard · EmployeeDashboard · CustomerDashboard)
+    ├── categories/     (types · service · CategoryTable · CategoryForm · Page)
+    ├── products/       (types · service · ProductTable · ProductForm · Page)
+    ├── customers/      (types · service · CustomerTable · CustomerForm · Page)
+    ├── employees/      (types · service · EmployeeTable · EmployeeForm · Page)
+    ├── sales/          (types × 2 · services × 2 · SaleTable · SaleForm · Page)
+    ├── users/          (types · service · UserTable · UserRegistrationForm · Page)
+    └── roles/          (types · service · RoleTable · RoleForm · Page)
 ```
 
 ---
 
 ## Testes
 
-O projeto possui **316 testes automatizados** divididos em duas camadas:
+O backend possui **316 testes automatizados** divididos em duas camadas:
 
 ```bash
+cd backend
 ./mvnw test
 ```
 
 ### Testes de Integração — Controllers (160 testes)
 
-Utilizam `@WebMvcTest` + `MockMvc` com segurança real (`SecurityConfig`) e serviços mockados. Validam: rotas, status HTTP, serialização JSON, regras de autorização (403 para roles sem permissão) e respostas de erro.
+Utilizam `@WebMvcTest` + `MockMvc` com segurança real e serviços mockados. Cobrem rotas, status HTTP, serialização JSON e regras de autorização.
 
 | Classe de Teste | Testes |
 |---|---|
@@ -402,7 +497,7 @@ Utilizam `@WebMvcTest` + `MockMvc` com segurança real (`SecurityConfig`) e serv
 
 ### Testes Unitários — Services (155 testes)
 
-Utilizam `@ExtendWith(MockitoExtension.class)` com repositórios mockados. Validam: regras de negócio, validações, soft delete, gestão de estoque e tratamento de exceções.
+Utilizam `@ExtendWith(MockitoExtension.class)` com repositórios mockados. Cobrem regras de negócio, soft delete, gestão de estoque e tratamento de exceções.
 
 | Classe de Teste | Testes |
 |---|---|
@@ -416,29 +511,7 @@ Utilizam `@ExtendWith(MockitoExtension.class)` com repositórios mockados. Valid
 | SaleServiceTest | 19 |
 | UserServiceTest | 15 |
 
-### Teste de Contexto
-
-| Classe de Teste | Testes |
-|---|---|
-| GerenciamentoFarmaciaApplicationTests | 1 |
-
-Os relatórios são gerados em `target/surefire-reports/`.
-
----
-
-## Dados de Desenvolvimento
-
-A migration `V4__seed_data.sql` insere dados para testes manuais:
-
-| Usuário | Senha | Papel |
-|---|---|---|
-| `admin` | `admin123` | ADMIN |
-| `joao.silva` | `func123` | EMPLOYEE |
-| `maria.santos` | `func123` | EMPLOYEE |
-| `carlos.oliveira` | `cli123` | CUSTOMER |
-| `ana.souza` | `cli123` | CUSTOMER |
-| `pedro.lima` | `cli123` | CUSTOMER |
-| `lucia.ferreira` | `cli123` | CUSTOMER |
+Os relatórios são gerados em `backend/target/surefire-reports/`.
 
 ---
 
